@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shvaan Stay & Play</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --cream:#F9F5EF;--warm:#FEFCF8;--forest:#2C4A3E;--forest-l:#3D6355;
+  --forest-p:#EBF2EE;--amber:#C8843A;--amber-l:#F5E6D3;--amber-p:#FDF6ED;
+  --clay:#8B5A3C;--dark:#1A2E26;--mid:#4A5E56;--light:#7A8F88;
+  --border:rgba(44,74,62,0.13);--red:#c0392b;--green:#27ae60;
+  --warn-bg:#FEF9C3;--warn-txt:#854D0E;
+  --err-bg:#FEE2E2;--err-txt:#991B1B;
+  --ok-bg:#DCFCE7;--ok-txt:#166534;
+  --info-bg:#E0E7FF;--info-txt:#3730A3;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--dark);min-height:100vh;}
+h1,h2,h3,h4{font-family:'Playfair Display',serif;}
+a{color:var(--forest);text-decoration:none;}
+
+/* ── SETUP ── */
+#setup{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.setup-card{background:var(--warm);border-radius:20px;padding:40px;width:min(500px,100%);border:1px solid var(--border);}
+.setup-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
+.setup-logo-icon{width:44px;height:44px;background:var(--forest);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;}
+.setup-logo strong{font-family:'Playfair Display',serif;font-size:22px;color:var(--forest);}
+.setup-card h2{font-size:20px;margin-bottom:6px;}
+.setup-card p{font-size:14px;color:var(--mid);margin-bottom:24px;line-height:1.6;}
+.setup-steps{background:var(--forest-p);border-radius:12px;padding:16px;margin-bottom:24px;font-size:13px;color:var(--mid);line-height:1.9;}
+.setup-steps strong{color:var(--forest);}
+.setup-steps code{background:rgba(44,74,62,.12);padding:1px 6px;border-radius:4px;font-size:12px;}
+
+/* ── NAV ── */
+#app{display:none;min-height:100vh;}
+nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:0 4vw;height:64px;background:rgba(254,252,248,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+.nav-logo{display:flex;align-items:center;gap:9px;cursor:pointer;}
+.nav-logo-icon{width:36px;height:36px;background:var(--forest);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.nav-logo strong{font-family:'Playfair Display',serif;font-size:16px;color:var(--forest);}
+.nav-logo span{font-size:9px;color:var(--light);letter-spacing:.12em;text-transform:uppercase;}
+.nav-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.nav-pill{display:flex;align-items:center;gap:8px;background:var(--forest-p);border-radius:100px;padding:5px 14px 5px 7px;cursor:pointer;}
+.nav-pill .av{width:28px;height:28px;border-radius:50%;background:var(--forest);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:600;}
+.nav-pill .nm{font-size:13px;font-weight:600;color:var(--forest);}
+.nav-pill .rb{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--amber);background:var(--amber-l);padding:2px 7px;border-radius:100px;}
+.nav-link{font-size:13px;font-weight:500;color:var(--mid);cursor:pointer;padding:6px 0;}
+.nav-link:hover,.nav-link.active{color:var(--forest);}
+
+/* ── PAGES ── */
+.page{display:none;padding:28px 4vw 64px;}
+.page.active{display:block;}
+.page-header{margin-bottom:24px;}
+.page-header h2{font-size:26px;}
+.page-header p{font-size:14px;color:var(--mid);margin-top:4px;}
+
+/* ── CARDS ── */
+.card{background:var(--warm);border-radius:16px;padding:22px;border:1px solid var(--border);}
+.card+.card{margin-top:14px;}
+.card-title{font-size:16px;font-weight:600;margin-bottom:16px;color:var(--dark);display:flex;align-items:center;gap:8px;}
+
+/* ── FORMS ── */
+.field{margin-bottom:15px;}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--light);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;}
+.req{color:var(--red);}
+.field input,.field select,.field textarea{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--dark);background:var(--cream);outline:none;transition:border-color .2s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--forest);}
+.field textarea{resize:vertical;min-height:72px;}
+.field-hint{font-size:11px;color:var(--light);margin-top:4px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:100px;font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .2s,transform .15s;}
+.btn:hover{transform:translateY(-1px);}
+.btn-primary{background:var(--forest);color:#fff;}
+.btn-primary:hover{background:var(--forest-l);}
+.btn-secondary{background:transparent;color:var(--forest);border:1.5px solid var(--forest);}
+.btn-secondary:hover{background:var(--forest-p);}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-warn{background:var(--amber);color:#fff;}
+.btn-sm{padding:7px 14px;font-size:13px;}
+.btn-xs{padding:4px 10px;font-size:12px;border-radius:8px;}
+.btn-icon{padding:6px;border-radius:8px;background:var(--forest-p);color:var(--forest);border:none;cursor:pointer;font-size:14px;line-height:1;}
+.btn-icon:hover{background:var(--forest);color:#fff;}
+
+/* ── STATUS BADGES ── */
+.badge{padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
+.badge-pending{background:var(--warn-bg);color:var(--warn-txt);}
+.badge-confirmed{background:var(--ok-bg);color:var(--ok-txt);}
+.badge-rejected,.badge-cancelled{background:var(--err-bg);color:var(--err-txt);}
+.badge-checked_in{background:#DBEAFE;color:#1E40AF;}
+.badge-completed{background:var(--info-bg);color:var(--info-txt);}
+.badge-info{background:var(--info-bg);color:var(--info-txt);}
+.badge-ok{background:var(--ok-bg);color:var(--ok-txt);}
+.badge-err{background:var(--err-bg);color:var(--err-txt);}
+
+/* ── ALERTS ── */
+.alert{padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:14px;display:none;line-height:1.5;}
+.alert.show{display:block;}
+.alert-err{background:var(--err-bg);color:var(--err-txt);}
+.alert-ok{background:var(--ok-bg);color:var(--ok-txt);}
+.alert-warn{background:var(--warn-bg);color:var(--warn-txt);}
+.alert-info{background:var(--info-bg);color:var(--info-txt);}
+
+/* ── TABLES ── */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:9px 12px;color:var(--light);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;border-bottom:1.5px solid var(--border);white-space:nowrap;}
+td{padding:11px 12px;border-bottom:1px solid var(--border);color:var(--mid);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--cream);}
+.td-strong{font-weight:600;color:var(--dark);}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(10,20,15,.55);backdrop-filter:blur(3px);z-index:500;align-items:flex-start;justify-content:center;overflow-y:auto;padding:32px 16px;}
+.overlay.open{display:flex;}
+.modal{background:var(--warm);border-radius:20px;padding:28px;width:min(580px,100%);margin:auto;position:relative;}
+.modal-lg{width:min(720px,100%);}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--light);}
+.modal-close:hover{color:var(--dark);}
+.modal h3{font-size:20px;margin-bottom:20px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--forest);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;transform:translateY(70px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);z-index:9999;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.error{background:var(--red);}
+
+/* ── AUTH ── */
+.auth-tabs{display:flex;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:22px;}
+.auth-tab{flex:1;padding:9px;font-size:13px;font-weight:600;background:none;border:none;cursor:pointer;color:var(--light);}
+.auth-tab.active{background:var(--forest);color:#fff;}
+
+/* ── CALENDAR ── */
+.cal-wrap{background:var(--warm);border-radius:16px;border:1px solid var(--border);overflow:hidden;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
+.cal-header h3{font-size:16px;font-weight:600;}
+.cal-nav{background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:16px;color:var(--mid);}
+.cal-nav:hover{background:var(--forest-p);color:var(--forest);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
+.cal-day-name{text-align:center;padding:10px 4px;font-size:11px;font-weight:600;color:var(--light);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;border:0.5px solid var(--border);position:relative;transition:background .15s;}
+.cal-day:hover:not(.cal-empty):not(.cal-blocked):not(.cal-past){background:var(--forest-p);color:var(--forest);}
+.cal-day.cal-empty{background:var(--cream);cursor:default;}
+.cal-day.cal-past{color:var(--light);cursor:default;background:var(--cream);}
+.cal-day.cal-blocked{background:var(--err-bg);color:var(--err-txt);cursor:not-allowed;}
+.cal-day.cal-blocked::after{content:'✕';position:absolute;font-size:9px;bottom:3px;right:4px;}
+.cal-day.cal-today{background:var(--forest-p);}
+.cal-day.cal-today span{background:var(--forest);color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;}
+.cal-day.cal-selected{background:var(--forest);color:#fff;}
+.cal-day.cal-selected:hover{background:var(--forest-l);}
+.cal-day.cal-range{background:rgba(44,74,62,.12);}
+.cal-day.cal-has-res::before{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--amber);}
+.cal-legend{display:flex;gap:16px;padding:12px 20px;flex-wrap:wrap;}
+.cal-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mid);}
+.cal-legend-dot{width:12px;height:12px;border-radius:3px;}
+
+/* ── BOOKING QUOTE PANEL ── */
+.quote-box{background:var(--amber-p);border-radius:14px;padding:20px;}
+.quote-line{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(44,74,62,.1);font-size:13px;color:var(--mid);}
+.quote-line:last-of-type{border-bottom:none;}
+.quote-line strong{font-size:14px;color:var(--dark);}
+.quote-total-row{background:var(--forest);border-radius:10px;padding:14px 18px;margin-top:12px;display:flex;justify-content:space-between;align-items:center;}
+.quote-total-row span{color:rgba(255,255,255,.7);font-size:13px;}
+.quote-total-row strong{font-family:'Playfair Display',serif;font-size:26px;color:#fff;}
+.discount-row{background:var(--ok-bg);border-radius:10px;padding:10px 14px;margin-top:8px;display:flex;justify-content:space-between;font-size:13px;color:var(--ok-txt);font-weight:600;}
+
+/* ── DOG CARDS ── */
+.dogs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
+.dog-card{background:var(--warm);border-radius:14px;padding:18px;border:1px solid var(--border);cursor:pointer;transition:transform .2s,box-shadow .2s;}
+.dog-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(44,74,62,.1);}
+.dog-card.selected{border:2px solid var(--forest);background:var(--forest-p);}
+.dog-avatar{width:50px;height:50px;border-radius:50%;background:var(--forest-p);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:10px;}
+.dog-card h3{font-size:15px;margin-bottom:2px;}
+.dog-card .dbreed{font-size:12px;color:var(--mid);}
+.size-badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:100px;background:var(--amber-l);color:var(--clay);margin-top:5px;}
+.add-dog-card{border-radius:14px;padding:18px;border:1.5px dashed var(--border);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:140px;transition:border-color .2s,background .2s;text-align:center;background:var(--warm);}
+.add-dog-card:hover{border-color:var(--forest);background:var(--forest-p);}
+
+/* ── VACCINE INDICATORS ── */
+.vacc-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+.vacc-card{border-radius:12px;padding:12px 14px;border:1.5px solid var(--border);background:var(--warm);}
+.vacc-card.ok{border-color:rgba(39,174,96,.3);background:var(--ok-bg);}
+.vacc-card.warn{border-color:rgba(200,132,58,.5);background:var(--warn-bg);}
+.vacc-card.expired,.vacc-card.missing{border-color:rgba(192,57,43,.3);background:var(--err-bg);}
+.vacc-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.vacc-card.ok .vacc-name{color:var(--ok-txt);}
+.vacc-card.warn .vacc-name{color:var(--warn-txt);}
+.vacc-card.expired .vacc-name,.vacc-card.missing .vacc-name{color:var(--err-txt);}
+.vacc-date{font-size:12px;color:var(--mid);}
+.vacc-status{font-size:11px;font-weight:600;margin-top:3px;}
+.vacc-card.ok .vacc-status{color:var(--ok-txt);}
+.vacc-card.warn .vacc-status{color:var(--warn-txt);}
+.vacc-card.expired .vacc-status,.vacc-card.missing .vacc-status{color:var(--err-txt);}
+.vacc-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.vacc-dot.ok{background:var(--green);}
+.vacc-dot.warn{background:var(--amber);}
+.vacc-dot.bad{background:var(--red);}
+.dog-vacc-mini{display:flex;gap:3px;margin-top:8px;align-items:center;}
+
+/* ── FILE UPLOAD ── */
+.file-upload-area{border:1.5px dashed var(--border);border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:var(--cream);transition:border-color .2s,background .2s;}
+.file-upload-area:hover,.file-upload-area.drag{border-color:var(--forest);background:var(--forest-p);}
+.file-chosen{display:flex;align-items:center;gap:8px;padding:7px 11px;background:var(--forest-p);border-radius:8px;margin-top:6px;font-size:13px;color:var(--forest);}
+.file-chosen button{background:none;border:none;color:var(--red);cursor:pointer;margin-left:auto;}
+.upload-progress{height:4px;background:var(--forest-p);border-radius:100px;overflow:hidden;margin-top:5px;display:none;}
+.upload-progress.show{display:block;}
+.upload-progress-fill{height:100%;background:var(--forest);width:0;transition:width .3s;}
+
+/* ── EXPIRY ALERTS ── */
+.expiry-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;margin-bottom:7px;}
+.expiry-item.expired{background:var(--err-bg);}
+.expiry-item.warning{background:var(--warn-bg);}
+.expiry-item .ei-icon{font-size:18px;}
+.expiry-item .ei-info{flex:1;}
+.expiry-item .ei-dog{font-size:13px;font-weight:600;color:var(--dark);}
+.expiry-item .ei-detail{font-size:12px;color:var(--mid);}
+.expiry-item .ei-badge{font-size:11px;font-weight:700;white-space:nowrap;}
+.expiry-item.expired .ei-badge{color:var(--err-txt);}
+.expiry-item.warning .ei-badge{color:var(--warn-txt);}
+
+/* ── MISC ── */
+.sep{height:1px;background:var(--border);margin:18px 0;}
+.stag{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:8px;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--light);}
+.empty-state .ei{font-size:38px;margin-bottom:10px;}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.breed-wrap{position:relative;}
+.breed-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--warm);border:1.5px solid var(--forest);border-top:none;border-radius:0 0 10px 10px;max-height:200px;overflow-y:auto;z-index:300;display:none;}
+.breed-dropdown.open{display:block;}
+.breed-opt{padding:8px 13px;font-size:14px;color:var(--dark);cursor:pointer;}
+.breed-opt:hover{background:var(--forest-p);}
+.breed-opt mark{background:transparent;color:var(--forest);font-weight:600;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px;}
+.stat-card{background:var(--warm);border-radius:14px;padding:18px;border:1px solid var(--border);text-align:center;}
+.stat-card .sn{font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:var(--forest);}
+.stat-card .sl{font-size:11px;color:var(--light);text-transform:uppercase;letter-spacing:.07em;margin-top:3px;}
+.admin-tabs{display:flex;gap:4px;margin-bottom:22px;border-bottom:1px solid var(--border);}
+.admin-tab{padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;color:var(--mid);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.admin-tab.active{color:var(--forest);border-bottom-color:var(--forest);}
+.cf-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--cream);border-radius:10px;margin-bottom:7px;}
+.cf-row .cf-label{flex:1;font-size:14px;color:var(--dark);}
+.cf-row .cf-type{font-size:11px;color:var(--light);background:var(--forest-p);padding:2px 7px;border-radius:100px;}
+.profile-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;}
+.profile-row:last-child{border-bottom:none;}
+.profile-row span:first-child{color:var(--mid);}
+.profile-row span:last-child{font-weight:500;}
+
+/* ── RES STATUS TIMELINE ── */
+.res-timeline{display:flex;align-items:center;gap:0;margin-bottom:20px;overflow-x:auto;}
+.rt-step{display:flex;flex-direction:column;align-items:center;flex:1;min-width:80px;}
+.rt-dot{width:28px;height:28px;border-radius:50%;background:var(--cream);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;z-index:1;position:relative;}
+.rt-dot.done{background:var(--forest);border-color:var(--forest);color:#fff;}
+.rt-dot.active{background:var(--amber);border-color:var(--amber);color:#fff;}
+.rt-dot.rejected{background:var(--red);border-color:var(--red);color:#fff;}
+.rt-label{font-size:10px;color:var(--light);margin-top:4px;text-align:center;text-transform:uppercase;letter-spacing:.04em;}
+.rt-line{flex:1;height:2px;background:var(--border);margin-top:-14px;}
+.rt-line.done{background:var(--forest);}
+
+/* ── DISCOUNT SECTION ── */
+.discount-box{border:1.5px dashed rgba(44,74,62,.3);border-radius:12px;padding:16px;background:var(--forest-p);}
+.discount-box h4{font-size:14px;color:var(--forest);margin-bottom:12px;}
+
+@media(max-width:700px){
+  .field-row,.field-row-3{grid-template-columns:1fr;}
+  .vacc-row{grid-template-columns:1fr;}
+  .dogs-grid{grid-template-columns:1fr;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .cal-grid{font-size:11px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ SETUP ═══ -->
+<div id="setup">
+  <div class="setup-card">
+    <div class="setup-logo">
+      <div class="setup-logo-icon">🐾</div>
+      <div><strong>Shvaan Stay & Play</strong></div>
+    </div>
+    <h2>Connect to Supabase</h2>
+    <p>Enter your Supabase project credentials from <strong>Settings → API</strong>.</p>
+    <div class="setup-steps">
+      <strong>Phase 2 setup:</strong><br>
+      1. Run <code>shvaan-phase1.sql</code> (if not done)<br>
+      2. Run <code>shvaan-phase2.sql</code> in SQL Editor<br>
+      3. Paste your credentials below
+    </div>
+    <div class="field"><label>Supabase Project URL</label><input type="url" id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co"></div>
+    <div class="field"><label>Supabase Anon Public Key</label><input type="text" id="sb-key" placeholder="eyJhbGciOi..."></div>
+    <div class="alert alert-err" id="setup-err"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;border-radius:12px;" onclick="connectSupabase()">Connect & Launch</button>
+    <div style="margin-top:10px;text-align:center;">
+      <a href="#" style="font-size:12px;color:var(--light);" onclick="useDemoMode()">Try demo mode (no Supabase needed)</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+  <nav>
+    <div class="nav-logo" onclick="navigate('dashboard')">
+      <div class="nav-logo-icon">🐾</div>
+      <div><strong>Shvaan</strong><br><span>Stay & Play</span></div>
+    </div>
+    <div class="nav-right">
+      <span class="nav-link" id="nlDogs" onclick="navigate('dogs')">My Dogs</span>
+      <span class="nav-link" id="nlBook" onclick="navigate('book')">Book a Stay</span>
+      <span class="nav-link" id="nlMyRes" onclick="navigate('my-reservations')">My Reservations</span>
+      <span id="navAdminLink"></span>
+      <div class="nav-pill" onclick="navigate('profile')">
+        <div class="av" id="navAv">?</div>
+        <span class="nm" id="navName">User</span>
+        <span class="rb" id="navRole">Member</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="refreshRole()" title="Re-fetch your role from the database" style="font-size:12px;padding:6px 12px;">↻ Refresh</button>
+      <button class="btn btn-secondary btn-sm" onclick="signOut()">Sign out</button>
+    </div>
+  </nav>
+
+  <!-- DEBUG BAR — shows live session state, remove after confirming admin works -->
+  <div id="debugBar" style="background:#1a1a2e;color:#00ff88;font-family:monospace;font-size:12px;padding:8px 4vw;display:none;flex-wrap:wrap;gap:16px;align-items:center;">
+    <span>🔍 Debug</span>
+    <span>User ID: <strong id="dbgUserId">—</strong></span>
+    <span>Email: <strong id="dbgEmail">—</strong></span>
+    <span>Profile role: <strong id="dbgRole" style="color:#ffdd57;">—</strong></span>
+    <span>Profile loaded: <strong id="dbgLoaded">—</strong></span>
+    <button onclick="runDebug()" style="background:#00ff88;color:#1a1a2e;border:none;padding:3px 10px;border-radius:4px;cursor:pointer;font-family:monospace;">Re-check</button>
+    <button onclick="document.getElementById('debugBar').style.display='none'" style="background:none;border:1px solid #00ff88;color:#00ff88;padding:3px 8px;border-radius:4px;cursor:pointer;">✕</button>
+  </div>
+  <div class="page" id="page-dashboard"><div class="page-header"><h2 id="dash-title">Dashboard</h2><p id="dash-sub"></p></div><div id="dash-content"></div></div>
+  <div class="page" id="page-dogs"><div class="page-header"><h2>My Dogs</h2><p>Manage profiles and vaccination records.</p></div><div class="dogs-grid" id="dogsGrid"></div></div>
+  <div class="page" id="page-dog-detail">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">
+      <button class="btn btn-secondary btn-sm" onclick="navigate('dogs')">← Back</button>
+      <div><h2 id="dd-title" style="font-size:22px;"></h2><p id="dd-sub" style="font-size:13px;color:var(--mid);"></p></div>
+    </div>
+    <div id="dd-content"></div>
+  </div>
+  <div class="page" id="page-book"><div class="page-header"><h2>Book a Stay</h2><p>Request a reservation for your dog.</p></div><div id="book-content"></div></div>
+  <div class="page" id="page-my-reservations"><div class="page-header"><h2>My Reservations</h2><p>Track your booking history and status.</p></div><div id="my-res-content"></div></div>
+  <div class="page" id="page-admin"><div class="page-header"><h2>Admin Panel</h2></div>
+    <div class="admin-tabs">
+      <div class="admin-tab active" onclick="adminTab('reservations',this)">Reservations</div>
+      <div class="admin-tab" onclick="adminTab('calendar',this)">Calendar</div>
+      <div class="admin-tab" onclick="adminTab('fields',this)">Dog Fields</div>
+      <div class="admin-tab" onclick="adminTab('services',this)">Services & Rates</div>
+      <div class="admin-tab" onclick="adminTab('users',this)">Clients</div>
+      <div class="admin-tab" onclick="adminTab('config',this)">Settings</div>
+    </div>
+    <div id="admin-content"></div>
+  </div>
+  <div class="page" id="page-profile"><div class="page-header"><h2>My Profile</h2></div><div id="profile-content"></div></div>
+</div>
+
+<!-- ═══ AUTH MODAL ═══ -->
+<div class="overlay" id="authOverlay">
+  <div class="modal" style="max-width:440px;">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:18px;">
+      <div style="width:34px;height:34px;background:var(--forest);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;">🐾</div>
+      <strong style="font-family:'Playfair Display',serif;font-size:17px;color:var(--forest);">Shvaan Stay & Play</strong>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="atLogin" onclick="authSwitch('login')">Sign In</button>
+      <button class="auth-tab" id="atReg" onclick="authSwitch('register')">Register</button>
+    </div>
+    <div id="authLogin">
+      <div class="field"><label>Email</label><input type="email" id="a-email" placeholder="you@email.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="a-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doSignIn()"></div>
+      <div class="alert alert-err" id="a-err"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;border-radius:12px;" onclick="doSignIn()" id="signInBtn">Sign In →</button>
+      <p style="text-align:center;font-size:12px;color:var(--mid);margin-top:14px;">Demo admin: <code>admin@shvaanstay.com</code> / <code>Admin123!</code></p>
+    </div>
+    <div id="authRegister" style="display:none;">
+      <div class="field-row">
+        <div class="field"><label>First Name <span class="req">*</span></label><input type="text" id="r-fn" placeholder="Sarah"></div>
+        <div class="field"><label>Last Name</label><input type="text" id="r-ln" placeholder="Johnson"></div>
+      </div>
+      <div class="field"><label>Email <span class="req">*</span></label><input type="email" id="r-em" placeholder="you@email.com"></div>
+      <div class="field"><label>Phone</label><input type="tel" id="r-ph" placeholder="(512) 555-0100"></div>
+      <div class="field"><label>Password <span class="req">*</span></label><input type="password" id="r-pw" placeholder="Min. 8 characters"></div>
+      <div class="alert alert-err" id="r-err"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;border-radius:12px;" onclick="doRegister()" id="regBtn">Create Account →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DOG MODAL ═══ -->
+<div class="overlay" id="dogModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDogModal()">✕</button>
+    <h3 id="dogModalTitle">Add a Dog</h3>
+    <div class="alert alert-err" id="dog-err"></div>
+    <div class="stag">Basic Info</div>
+    <div class="field-row">
+      <div class="field"><label>Dog's Name <span class="req">*</span></label><input type="text" id="d-name" placeholder="Buddy"></div>
+      <div class="field"><label>Sex</label><select id="d-sex"><option value="unknown">Unknown</option><option value="male">Male</option><option value="female">Female</option></select></div>
+    </div>
+    <div class="field"><label>Breed <span class="req">*</span></label>
+      <div class="breed-wrap">
+        <input type="text" id="d-breed-search" placeholder="Search breed…" autocomplete="off" oninput="filterBreeds()" onfocus="openBreedDD()" onblur="setTimeout(closeBreedDD,200)">
+        <input type="hidden" id="d-breed-id">
+        <div class="breed-dropdown" id="breedDD"></div>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Size <span class="req">*</span></label>
+        <select id="d-size"><option value="small">Small — up to 25 lbs</option><option value="medium" selected>Medium — 25–60 lbs</option><option value="large">Large — 60–90 lbs</option><option value="xlarge">XL — 90+ lbs</option></select>
+      </div>
+      <div class="field"><label>Weight (lbs)</label><input type="number" id="d-weight" placeholder="45" min="1" max="300" step="0.1"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Date of Birth</label><input type="date" id="d-dob"></div>
+      <div class="field"><label>Color</label><input type="text" id="d-color" placeholder="Golden"></div>
+    </div>
+    <div class="field"><label>Neutered / Spayed?</label><select id="d-neutered"><option value="false">No</option><option value="true">Yes</option></select></div>
+    <div class="field"><label>Notes</label><textarea id="d-notes" placeholder="Temperament, special needs…"></textarea></div>
+    <div id="custom-fields-section"></div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button class="btn btn-primary" onclick="saveDog()" id="saveDogBtn">Save Dog</button>
+      <button class="btn btn-secondary" onclick="closeDogModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VACCINATION MODAL ═══ -->
+<div class="overlay" id="vaccModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeVaccModal()">✕</button>
+    <h3 id="vaccModalTitle">Update Vaccination</h3>
+    <input type="hidden" id="v-dog-id">
+    <input type="hidden" id="v-type">
+    <div class="alert alert-err" id="v-err"></div>
+    <div class="alert alert-warn" id="v-warn"></div>
+    <div class="field"><label>Vaccine Type</label><input type="text" id="v-type-display" readonly style="background:var(--forest-p);color:var(--forest);font-weight:600;"></div>
+    <div class="field-row">
+      <div class="field"><label>Date Administered</label><input type="date" id="v-admin"></div>
+      <div class="field"><label>Expiration Date <span class="req">*</span></label><input type="date" id="v-expiry"></div>
+    </div>
+    <div class="field">
+      <label>Proof of Vaccination (PDF or Image)</label>
+      <div class="file-upload-area" id="vaccUploadArea" onclick="document.getElementById('v-file').click()" ondragover="dragOver(event,'vaccUploadArea')" ondragleave="dragLeave('vaccUploadArea')" ondrop="dropFile(event,'v-file','vaccUploadArea','vaccFileChosen')">
+        <div style="font-size:22px;margin-bottom:5px;">📄</div>
+        <p style="font-size:13px;color:var(--mid);">Click to upload or drag & drop</p>
+        <span style="font-size:11px;color:var(--light);">PDF, JPG, PNG — max 10 MB</span>
+      </div>
+      <input type="file" id="v-file" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="fileChosen('v-file','vaccFileChosen')">
+      <div id="vaccFileChosen"></div>
+      <div class="upload-progress" id="vaccProgress"><div class="upload-progress-fill" id="vaccProgressFill"></div></div>
+    </div>
+    <div id="v-current-file" style="display:none;margin-bottom:10px;"></div>
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn btn-primary" onclick="saveVacc()" id="saveVaccBtn">Save Vaccination</button>
+      <button class="btn btn-secondary" onclick="closeVaccModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CUSTOM FIELD MODAL ═══ -->
+<div class="overlay" id="cfModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeCfModal()">✕</button>
+    <h3 id="cfModalTitle">Add Custom Field</h3>
+    <input type="hidden" id="cf-id">
+    <div class="alert alert-err" id="cf-err"></div>
+    <div class="field"><label>Field Label <span class="req">*</span></label><input type="text" id="cf-label" placeholder="e.g. Emergency Contact"></div>
+    <div class="field"><label>Field Type</label><select id="cf-type" onchange="cfTypeChange()"><option value="text">Text</option><option value="number">Number</option><option value="select">Dropdown</option><option value="boolean">Yes / No</option><option value="date">Date</option></select></div>
+    <div class="field" id="cf-options-field" style="display:none;"><label>Options (one per line)</label><textarea id="cf-options" placeholder="Option A&#10;Option B"></textarea></div>
+    <div class="field" style="display:flex;align-items:center;gap:10px;"><input type="checkbox" id="cf-required" style="width:auto;"><label for="cf-required" style="text-transform:none;letter-spacing:0;font-size:14px;color:var(--dark);cursor:pointer;">Required field</label></div>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn btn-primary" onclick="saveCf()">Save Field</button>
+      <button class="btn btn-secondary" onclick="closeCfModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SERVICE MODAL ═══ -->
+<div class="overlay" id="svcModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeSvcModal()">✕</button>
+    <h3 id="svcModalTitle">Add Service</h3>
+    <input type="hidden" id="svc-id">
+    <div class="alert alert-err" id="svc-err"></div>
+    <div class="field"><label>Service Name <span class="req">*</span></label><input type="text" id="svc-name" placeholder="e.g. Training Walk"></div>
+    <div class="field"><label>Description</label><textarea id="svc-desc" placeholder="Brief description…" style="min-height:60px;"></textarea></div>
+    <div class="field"><label>Billing Unit</label><select id="svc-unit"><option value="night">Per night</option><option value="day">Per day</option><option value="session">Per session</option><option value="walk">Per walk</option></select></div>
+    <div class="sep"></div>
+    <div class="stag">Rates by Dog Size</div>
+    <div class="field-row">
+      <div class="field"><label>Small (up to 25 lbs) — $</label><input type="number" id="svc-r-small" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="field"><label>Medium (25–60 lbs) — $</label><input type="number" id="svc-r-medium" placeholder="0.00" step="0.01" min="0"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Large (60–90 lbs) — $</label><input type="number" id="svc-r-large" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="field"><label>XL (90+ lbs) — $</label><input type="number" id="svc-r-xlarge" placeholder="0.00" step="0.01" min="0"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-primary" onclick="saveSvc()">Save Service</button>
+      <button class="btn btn-secondary" onclick="closeSvcModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RESERVATION DETAIL MODAL (admin) ═══ -->
+<div class="overlay" id="resModal">
+  <div class="modal modal-lg">
+    <button class="modal-close" onclick="closeResModal()">✕</button>
+    <h3 id="resModalTitle">Reservation Details</h3>
+    <div id="resModalContent"></div>
+  </div>
+</div>
+
+<!-- ═══ REJECT MODAL ═══ -->
+<div class="overlay" id="rejectModal">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeRejectModal()">✕</button>
+    <h3>Reject Reservation</h3>
+    <input type="hidden" id="rej-id">
+    <div class="field"><label>Reason for rejection <span class="req">*</span></label><textarea id="rej-reason" placeholder="e.g. Dates not available, vaccination records incomplete…"></textarea></div>
+    <div class="alert alert-err" id="rej-err"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-danger" onclick="confirmReject()">Reject Reservation</button>
+      <button class="btn btn-secondary" onclick="closeRejectModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  GLOBALS
+// ════════════════════════════════════════════════════════════
+let SB = null, DEMO = false;
+let currentUser = null, currentProfile = null;
+let allBreeds = [], customFields = [], services = [], pricingConfig = {overstay_threshold_hrs:3,overstay_charge_pct:50,vacc_warning_days:30};
+let blockedDates = new Set();
+let editingDogId = null;
+const SIZE_LABELS = {small:'Small',medium:'Medium',large:'Large',xlarge:'XL'};
+const VACC_TYPES = ['Rabies','DHPP','Bordetella'];
+
+// ════════════════════════════════════════════════════════════
+//  SETUP & AUTH
+// ════════════════════════════════════════════════════════════
+async function connectSupabase(){
+  const url=document.getElementById('sb-url').value.trim(), key=document.getElementById('sb-key').value.trim();
+  const err=document.getElementById('setup-err');
+  if(!url||!key){showSetupErr('Enter both URL and anon key.');return;}
+  try{
+    SB=supabase.createClient(url,key);
+    const {error}=await SB.auth.getSession();
+    if(error)throw error;
+    localStorage.setItem('sb_url',url);localStorage.setItem('sb_key',key);
+    await launchApp();
+  }catch(e){showSetupErr('Connection failed: '+(e.message||'Check your credentials'));}
+}
+function showSetupErr(msg){const el=document.getElementById('setup-err');el.textContent=msg;el.classList.add('show');}
+function useDemoMode(){DEMO=true;localStorage.setItem('demo_mode','1');initDemoData();launchApp();}
+
+window.addEventListener('load',async()=>{
+  if(localStorage.getItem('demo_mode')==='1'){DEMO=true;initDemoData();await launchApp();return;}
+  const url=localStorage.getItem('sb_url'),key=localStorage.getItem('sb_key');
+  if(url&&key){SB=supabase.createClient(url,key);await launchApp();}
+});
+
+async function launchApp(){
+  document.getElementById('setup').style.display='none';
+  document.getElementById('app').style.display='block';
+  if(DEMO){
+    currentUser={id:'admin-demo',email:'admin@demo.com'};
+    currentProfile={id:'admin-demo',role:'admin',first_name:'Ajay',last_name:'Admin',phone:''};
+    await loadGlobalData();updateNav();navigate('dashboard');return;
+  }
+  // Check for an existing session on page load
+  const {data:{session}}=await SB.auth.getSession();
+  if(session?.user){
+    currentUser=session.user;
+    await loadProfile();
+    await loadGlobalData();
+    updateNav();
+    navigate('dashboard');
+  } else {
+    showAuthModal();
+  }
+}
+async function loadGlobalData(){
+  await Promise.all([loadBreeds(),loadCustomFields(),loadServices(),loadPricingConfig(),loadBlockedDates()]);
+}
+async function loadBreeds(){
+  if(DEMO){allBreeds=DEMO_BREEDS;return;}
+  const {data}=await SB.from('breeds').select('*').order('name');
+  if(data)allBreeds=data;
+}
+async function loadCustomFields(){
+  if(DEMO){customFields=demoStore.custom_fields||[];return;}
+  const {data}=await SB.from('dog_custom_fields').select('*').eq('active',true).order('sort_order');
+  if(data)customFields=data;
+}
+async function loadServices(){
+  if(DEMO){services=demoStore.services||[];return;}
+  const {data}=await SB.from('services').select('*,service_rates(*)').eq('active',true).order('sort_order');
+  if(data)services=data;
+}
+async function loadPricingConfig(){
+  if(DEMO)return;
+  const {data}=await SB.from('pricing_config').select('*').limit(1).single();
+  if(data)pricingConfig=data;
+}
+async function loadBlockedDates(){
+  blockedDates=new Set();
+  if(DEMO){(demoStore.blocked_dates||[]).forEach(d=>blockedDates.add(d.date));return;}
+  const {data}=await SB.from('blocked_dates').select('date');
+  if(data)data.forEach(r=>blockedDates.add(r.date));
+}
+async function loadProfile(){
+  if(!SB||!currentUser)return;
+  // Always fetch fresh from DB — never rely on cached value.
+  // This is critical: if the admin role was set in SQL after the
+  // initial login, the cached profile would have the old role.
+  const {data,error}=await SB.from('profiles').select('*').eq('id',currentUser.id).single();
+  if(data){
+    currentProfile=data;
+  } else if(error){
+    console.warn('loadProfile error:',error.message);
+    // If profile row doesn't exist yet (race with trigger), create a minimal one
+    if(error.code==='PGRST116'){
+      const fallback={id:currentUser.id,role:'user',
+        first_name:currentUser.user_metadata?.first_name||currentUser.email?.split('@')[0]||'User',
+        last_name:currentUser.user_metadata?.last_name||'',phone:''};
+      await SB.from('profiles').upsert(fallback,{onConflict:'id'});
+      currentProfile=fallback;
+    }
+  }
+}
+function showAuthModal(){document.getElementById('authOverlay').classList.add('open');}
+function authSwitch(t){
+  document.getElementById('authLogin').style.display=t==='login'?'block':'none';
+  document.getElementById('authRegister').style.display=t==='register'?'block':'none';
+  document.getElementById('atLogin').className='auth-tab'+(t==='login'?' active':'');
+  document.getElementById('atReg').className='auth-tab'+(t==='register'?' active':'');
+}
+async function doSignIn(){
+  const email=document.getElementById('a-email').value.trim(),pass=document.getElementById('a-pass').value;
+  const err=document.getElementById('a-err'),btn=document.getElementById('signInBtn');
+  err.classList.remove('show');
+  if(!email||!pass){err.textContent='Enter email and password.';err.classList.add('show');return;}
+  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
+  const {data,error}=await SB.auth.signInWithPassword({email,password:pass});
+  btn.innerHTML='Sign In →';btn.disabled=false;
+  if(error){err.textContent=error.message;err.classList.add('show');return;}
+  // Close modal and boot the app with the fresh session
+  document.getElementById('authOverlay').classList.remove('open');
+  currentUser=data.user;
+  await loadProfile();
+  await loadGlobalData();
+  updateNav();
+  navigate('dashboard');
+  // Show debug bar so we can verify role loaded correctly
+  runDebug();
+}
+async function doRegister(){
+  const fn=document.getElementById('r-fn').value.trim(),em=document.getElementById('r-em').value.trim(),pw=document.getElementById('r-pw').value;
+  const err=document.getElementById('r-err'),btn=document.getElementById('regBtn');
+  err.classList.remove('show');
+  if(!fn||!em||!pw){err.textContent='Fill in required fields.';err.classList.add('show');return;}
+  if(pw.length<8){err.textContent='Password min 8 characters.';err.classList.add('show');return;}
+  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
+  const ln=document.getElementById('r-ln').value.trim(),ph=document.getElementById('r-ph').value.trim();
+  const {error}=await SB.auth.signUp({email:em,password:pw,options:{data:{first_name:fn,last_name:ln,phone:ph}}});
+  btn.innerHTML='Create Account →';btn.disabled=false;
+  if(error){err.textContent=error.message;err.classList.add('show');}
+  else{toast('✅ Account created! Check email to confirm.');authSwitch('login');}
+}
+async function signOut(){
+  // 1. Clear app state immediately
+  currentUser=null;currentProfile=null;
+  localStorage.removeItem('demo_mode');
+
+  // 2. Nuke ALL localStorage keys — catches any Supabase token format
+  //    regardless of SDK version or project ref naming
+  try{ localStorage.clear(); }catch(_){}
+
+  // 3. Re-save only the connection credentials so the setup screen
+  //    doesn't reappear after the page reloads
+  const url=SB?._supabaseUrl||localStorage.getItem('sb_url')||'';
+  const key=SB?._supabaseKey||localStorage.getItem('sb_key')||'';
+
+  // 4. Try the official signOut — may fail if session already stale, that's fine
+  if(!DEMO){
+    try{ await SB.auth.signOut({scope:'local'}); }catch(_){}
+  }
+
+  // 5. Re-save credentials so user doesn't hit setup screen again
+  if(url)localStorage.setItem('sb_url',url);
+  if(key)localStorage.setItem('sb_key',key);
+
+  // 6. Reset UI — show auth modal, clear fields
+  document.getElementById('authOverlay').classList.add('open');
+  document.getElementById('authLogin').style.display='block';
+  document.getElementById('authRegister').style.display='none';
+  document.getElementById('atLogin').className='auth-tab active';
+  document.getElementById('atReg').className='auth-tab';
+  document.getElementById('a-email').value='';
+  document.getElementById('a-pass').value='';
+  document.getElementById('a-err').classList.remove('show');
+}
+function updateNav(){
+  const p=currentProfile;if(!p)return;
+  const init=((p.first_name||'?')[0]).toUpperCase();
+  document.getElementById('navAv').textContent=init;
+  document.getElementById('navName').textContent=p.first_name||(currentUser?.email?.split('@')[0])||'User';
+  document.getElementById('navRole').textContent=p.role==='admin'?'Admin':'Member';
+  document.getElementById('navAdminLink').innerHTML=p.role==='admin'
+    ?'<span class="nav-link" onclick="navigate(\'admin\')">Admin Panel</span>':'';
+}
+
+async function runDebug(){
+  const bar=document.getElementById('debugBar');
+  bar.style.display='flex';
+  document.getElementById('dbgUserId').textContent=currentUser?.id?.slice(0,16)+'...'||'null';
+  document.getElementById('dbgEmail').textContent=currentUser?.email||'null';
+  document.getElementById('dbgLoaded').textContent=currentProfile?'YES':'NO';
+  document.getElementById('dbgRole').textContent=currentProfile?.role||'NOT LOADED';
+
+  // Try fetching profile directly right now and show result
+  if(SB&&currentUser){
+    const {data,error}=await SB.from('profiles').select('id,role,first_name').eq('id',currentUser.id).single();
+    if(data){
+      document.getElementById('dbgRole').textContent=data.role+' (live from DB)';
+      document.getElementById('dbgRole').style.color=data.role==='admin'?'#00ff88':'#ffdd57';
+      // If DB says admin but app doesn't know — fix it now
+      if(data.role==='admin'&&currentProfile?.role!=='admin'){
+        currentProfile=data;
+        updateNav();
+        navigate('dashboard');
+        toast('✅ Role fixed: you are now Admin');
+      }
+    } else {
+      document.getElementById('dbgRole').textContent='DB ERROR: '+(error?.message||'unknown');
+      document.getElementById('dbgRole').style.color='#ff5555';
+    }
+  }
+}
+
+async function refreshRole(){
+  if(DEMO){toast('Demo mode — role is fixed','error');return;}
+  if(!currentUser){toast('Not signed in','error');return;}
+  await loadProfile();
+  updateNav();
+  navigate('dashboard');
+  toast('✅ Session refreshed — you are: '+(currentProfile?.role||'unknown'));
+}
+
+// ════════════════════════════════════════════════════════════
+//  ROUTING
+// ════════════════════════════════════════════════════════════
+function navigate(page,params={}){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const el=document.getElementById('page-'+page);
+  if(el)el.classList.add('active');
+  window._navParams=params;
+  ({dashboard:renderDashboard,dogs:renderDogs,'dog-detail':()=>renderDogDetail(params.dogId),
+    book:renderBookPage,'my-reservations':renderMyReservations,admin:renderAdmin,profile:renderProfilePage}[page]||(() => {}))();
+}
+
+// ════════════════════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════════════════════
+async function renderDashboard(){
+  const p=currentProfile;
+  document.getElementById('dash-title').textContent='Good '+timeOfDay()+', '+(p?.first_name||'there')+' 👋';
+  document.getElementById('dash-sub').textContent=p?.role==='admin'?'Business overview':'Your dogs and reservations';
+  if(p?.role==='admin')await renderAdminDashboard();
+  else await renderUserDashboard();
+}
+async function renderAdminDashboard(){
+  const el=document.getElementById('dash-content');
+  let dogs=[],allRes=[],vaccData=[];
+  if(!DEMO){
+    const {data:d}=await SB.from('dogs').select('*,profiles(first_name,last_name),breeds(name),vaccinations(*)').eq('active',true);
+    const {data:r}=await SB.from('reservations').select('*,dogs(name),profiles(first_name,last_name),services(name)').order('created_at',{ascending:false});
+    dogs=d||[];allRes=r||[];
+    vaccData=dogs.flatMap(dog=>(dog.vaccinations||[]).map(v=>({...v,dog_name:dog.name,owner:`${dog.profiles?.first_name||''} ${dog.profiles?.last_name||''}`.trim()})));
+  }else{
+    dogs=demoStore.dogs||[];allRes=demoStore.reservations||[];
+    vaccData=(demoStore.vaccinations||[]).map(v=>{const d=dogs.find(x=>x.id===v.dog_id)||{};return{...v,dog_name:d.name||'?',owner:'Demo Owner'};});
+  }
+  const today=new Date();today.setHours(0,0,0,0);
+  const warnDate=new Date(today);warnDate.setDate(warnDate.getDate()+pricingConfig.vacc_warning_days);
+  const expired=vaccData.filter(v=>new Date(v.expires_on)<today);
+  const expiring=vaccData.filter(v=>{const d=new Date(v.expires_on);return d>=today&&d<=warnDate;});
+  const pending=allRes.filter(r=>r.status==='pending');
+  const checkedIn=allRes.filter(r=>r.status==='checked_in');
+  el.innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-card"><div class="sn">${allRes.filter(r=>r.status==='confirmed').length}</div><div class="sl">Confirmed</div></div>
+      <div class="stat-card"><div class="sn" style="color:var(--amber)">${pending.length}</div><div class="sl">Pending Approval</div></div>
+      <div class="stat-card"><div class="sn" style="color:#1E40AF">${checkedIn.length}</div><div class="sl">Currently Checked In</div></div>
+      <div class="stat-card"><div class="sn">${dogs.length}</div><div class="sl">Total Dogs</div></div>
+      <div class="stat-card"><div class="sn" style="color:var(--red)">${expired.length}</div><div class="sl">Expired Vaccines</div></div>
+      <div class="stat-card"><div class="sn" style="color:var(--amber)">${expiring.length}</div><div class="sl">Expiring Soon</div></div>
+    </div>
+    ${pending.length?`<div class="card" style="margin-bottom:14px;"><div class="card-title">⏳ Pending Approvals</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Dog</th><th>Owner</th><th>Service</th><th>Check-in</th><th>Check-out</th><th>Est. Total</th><th>Actions</th></tr></thead>
+        <tbody>${pending.map(r=>resRowHtml(r,true)).join('')}</tbody>
+      </table></div></div>`:''}
+    ${(expired.length||expiring.length)?`<div class="card"><div class="card-title">💉 Vaccine Alerts</div>
+      ${[...expired.map(v=>`<div class="expiry-item expired"><div class="ei-icon">❌</div><div class="ei-info"><div class="ei-dog">${esc(v.dog_name)} — ${esc(v.owner)}</div><div class="ei-detail">${v.vaccine_type} · Expired ${fmtDate(v.expires_on)}</div></div><div class="ei-badge">EXPIRED</div></div>`),
+         ...expiring.map(v=>`<div class="expiry-item warning"><div class="ei-icon">⚠️</div><div class="ei-info"><div class="ei-dog">${esc(v.dog_name)} — ${esc(v.owner)}</div><div class="ei-detail">${v.vaccine_type} · Expires ${fmtDate(v.expires_on)}</div></div><div class="ei-badge">EXPIRING SOON</div></div>`)].join('')}
+    </div>`:''}`;
+}
+async function renderUserDashboard(){
+  const el=document.getElementById('dash-content');
+  const dogs=await loadUserDogs();
+  let myRes=[];
+  if(!DEMO){const {data}=await SB.from('reservations').select('*,dogs(name),services(name)').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(5);myRes=data||[];}
+  else myRes=(demoStore.reservations||[]).filter(r=>r.user_id===currentUser.id).slice(0,5).map(r=>({...r,dogs:{name:(demoStore.dogs||[]).find(d=>d.id===r.dog_id)?.name||'?'},services:{name:(demoStore.services||[]).find(s=>s.id===r.service_id)?.name||'?'}}));
+  const today=new Date();today.setHours(0,0,0,0);
+  const warnDate=new Date(today);warnDate.setDate(warnDate.getDate()+pricingConfig.vacc_warning_days);
+  const vaccAlerts=[];
+  dogs.forEach(dog=>(dog.vaccinations||[]).forEach(v=>{const exp=new Date(v.expires_on);if(exp<today)vaccAlerts.push({...v,dog_name:dog.name,level:'expired'});else if(exp<=warnDate)vaccAlerts.push({...v,dog_name:dog.name,level:'warning'});}));
+  el.innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-card"><div class="sn">${dogs.length}</div><div class="sl">My Dogs</div></div>
+      <div class="stat-card"><div class="sn">${myRes.filter(r=>r.status==='confirmed').length}</div><div class="sl">Confirmed</div></div>
+      <div class="stat-card"><div class="sn" style="color:var(--amber)">${myRes.filter(r=>r.status==='pending').length}</div><div class="sl">Pending</div></div>
+      <div class="stat-card"><div class="sn" style="color:${vaccAlerts.length?'var(--red)':'var(--green)'}">${vaccAlerts.length}</div><div class="sl">Vaccine Alerts</div></div>
+    </div>
+    ${vaccAlerts.length?`<div class="card" style="margin-bottom:14px;"><div class="card-title">💉 Vaccination Alerts</div>
+      ${vaccAlerts.map(v=>`<div class="expiry-item ${v.level}"><div class="ei-icon">${v.level==='expired'?'❌':'⚠️'}</div><div class="ei-info"><div class="ei-dog">${esc(v.dog_name)}</div><div class="ei-detail">${v.vaccine_type} · ${v.level==='expired'?'Expired':'Expires'} ${fmtDate(v.expires_on)}</div></div><div class="ei-badge">${v.level==='expired'?'EXPIRED':'EXPIRING SOON'}</div></div>`).join('')}
+    </div>`:''}
+    ${myRes.length?`<div class="card"><div class="card-title" style="justify-content:space-between;">Recent Reservations <button class="btn btn-secondary btn-sm" onclick="navigate('my-reservations')">View all</button></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Dog</th><th>Service</th><th>Check-in</th><th>Check-out</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody>${myRes.map(r=>`<tr>
+          <td class="td-strong">${esc(r.dogs?.name||'?')}</td>
+          <td>${esc(r.services?.name||'?')}</td>
+          <td>${fmtDT(r.requested_checkin)}</td>
+          <td>${fmtDT(r.requested_checkout)}</td>
+          <td>$${num(r.total_amount||0)}</td>
+          <td>${statusBadge(r.status)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div></div>`:`<div class="card"><div class="empty-state"><div class="ei">📅</div><p>No reservations yet.</p><button class="btn btn-primary btn-sm" onclick="navigate('book')">Book a Stay</button></div></div>`}`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  DOGS
+// ════════════════════════════════════════════════════════════
+async function loadUserDogs(){
+  if(DEMO)return demoStore.dogs.filter(d=>d.owner_id===currentUser.id&&d.active!==false).map(d=>({...d,breed_name:allBreeds.find(b=>b.id===d.breed_id)?.name||d.breed_other||'Unknown',vaccinations:demoStore.vaccinations.filter(v=>v.dog_id===d.id)}));
+  const uid=currentProfile?.role==='admin'?undefined:currentUser.id;
+  let q=SB.from('dogs').select('*,breeds(name),vaccinations(*)').eq('active',true);
+  if(uid)q=q.eq('owner_id',uid);
+  const {data}=await q;
+  return (data||[]).map(d=>({...d,breed_name:d.breeds?.name||d.breed_other||'Unknown'}));
+}
+async function renderDogs(){
+  const grid=document.getElementById('dogsGrid');
+  grid.innerHTML='<div style="padding:20px;color:var(--mid);">Loading…</div>';
+  const dogs=await loadUserDogs();
+  grid.innerHTML='';
+  dogs.forEach(d=>{
+    const div=document.createElement('div');
+    div.innerHTML=dogCardHtml(d);
+    const card=div.firstElementChild;
+    card.onclick=()=>navigate('dog-detail',{dogId:d.id});
+    grid.appendChild(card);
+  });
+  const add=document.createElement('div');
+  add.className='add-dog-card';
+  add.innerHTML='<div style="font-size:26px;color:var(--forest);margin-bottom:8px;">+</div><p style="font-size:14px;color:var(--mid);">Add a new dog</p>';
+  add.onclick=openDogModal;
+  grid.appendChild(add);
+}
+function dogCardHtml(dog){
+  const today=new Date();today.setHours(0,0,0,0);
+  const wd=new Date(today);wd.setDate(wd.getDate()+pricingConfig.vacc_warning_days);
+  const vs=VACC_TYPES.map(t=>{const v=(dog.vaccinations||[]).find(x=>x.vaccine_type===t);if(!v)return'bad';const e=new Date(v.expires_on);return e<today?'bad':e<=wd?'warn':'ok';});
+  return `<div class="dog-card"><div class="dog-avatar">🐾</div><h3>${esc(dog.name)}</h3><div class="dbreed">${esc(dog.breed_name)}</div><span class="size-badge">${SIZE_LABELS[dog.size]||dog.size}</span><div class="dog-vacc-mini">${VACC_TYPES.map((t,i)=>`<span class="vacc-dot ${vs[i]}" title="${t}"></span>`).join('')}<span style="font-size:11px;color:var(--light);margin-left:3px;">vaccines</span></div></div>`;
+}
+async function renderDogDetail(dogId){
+  const dogs=await loadUserDogs();
+  const dog=dogs.find(d=>d.id===dogId);
+  if(!dog){navigate('dogs');return;}
+  document.getElementById('dd-title').textContent=dog.name;
+  document.getElementById('dd-sub').textContent=`${dog.breed_name} · ${SIZE_LABELS[dog.size]||dog.size}`;
+  const today=new Date();today.setHours(0,0,0,0);
+  const wd=new Date(today);wd.setDate(wd.getDate()+pricingConfig.vacc_warning_days);
+  const vaccCards=VACC_TYPES.map(t=>{
+    const v=(dog.vaccinations||[]).find(x=>x.vaccine_type===t);
+    let cls='missing',status='Not recorded',expTxt='';
+    if(v){const exp=new Date(v.expires_on);expTxt=`Expires ${fmtDate(v.expires_on)}`;if(exp<today){cls='expired';status='EXPIRED';}else if(exp<=wd){cls='warn';status=`Expiring in ${daysUntil(v.expires_on)} days`;}else{cls='ok';status='Current';}}
+    return `<div class="vacc-card ${cls}"><div class="vacc-name">${t}</div><div class="vacc-date">${expTxt||'No record'}</div><div class="vacc-status">${status}</div>
+      <button class="btn btn-sm btn-secondary" style="margin-top:7px;border-radius:8px;" onclick="openVaccModal('${dogId}','${t}')">${v?'Update':'Add'}</button>
+      ${v?.file_url?`<a href="${v.file_url}" target="_blank" style="font-size:11px;display:block;margin-top:4px;">📎 View proof</a>`:''}
+    </div>`;
+  }).join('');
+  let cfValues={};
+  if(!DEMO){const {data}=await SB.from('dog_field_values').select('*').eq('dog_id',dogId);(data||[]).forEach(v=>cfValues[v.field_id]=v.value);}
+  else (demoStore.field_values||[]).filter(v=>v.dog_id===dogId).forEach(v=>cfValues[v.field_id]=v.value);
+  const cfHtml=customFields.length?`<div class="card" style="margin-top:14px;"><div class="card-title">📋 Additional Info</div>${customFields.map(f=>`<div class="profile-row"><span>${esc(f.label)}</span><span>${esc(cfValues[f.id]||'—')}</span></div>`).join('')}</div>`:'';
+  const isAdmin=currentProfile?.role==='admin';
+  document.getElementById('dd-content').innerHTML=`
+    <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+      <button class="btn btn-secondary btn-sm" onclick="openDogModal('${dogId}')">✏️ Edit Profile</button>
+      <button class="btn btn-primary btn-sm" onclick="navigate('book',{dogId:'${dogId}'})">📅 Book a Stay</button>
+    </div>
+    <div class="card"><div class="card-title">💉 Vaccinations</div><div class="vacc-row">${vaccCards}</div></div>
+    <div class="card" style="margin-top:14px;"><div class="card-title">🐾 Profile Details</div>
+      <div>${[['Breed',dog.breed_name],['Size',SIZE_LABELS[dog.size]||dog.size],['Weight',dog.weight_lbs?dog.weight_lbs+' lbs':'—'],['Date of Birth',dog.dob?fmtDate(dog.dob):'—'],['Sex',dog.sex||'—'],['Color',dog.color||'—'],['Neutered/Spayed',dog.neutered?'Yes':'No'],dog.notes?['Notes',dog.notes]:null].filter(Boolean).map(([l,v])=>`<div class="profile-row"><span>${l}</span><span>${esc(v)}</span></div>`).join('')}</div>
+    </div>${cfHtml}`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  DOG MODAL
+// ════════════════════════════════════════════════════════════
+async function openDogModal(dogId=null){
+  editingDogId=dogId;
+  document.getElementById('dogModalTitle').textContent=dogId?'Edit Dog Profile':'Add a Dog';
+  document.getElementById('dog-err').classList.remove('show');
+  if(dogId){
+    const dogs=await loadUserDogs();const d=dogs.find(x=>x.id===dogId);
+    if(d){
+      setV('d-name',d.name);setV('d-sex',d.sex||'unknown');setV('d-size',d.size);
+      setV('d-weight',d.weight_lbs||'');setV('d-dob',d.dob||'');setV('d-color',d.color||'');
+      setV('d-neutered',d.neutered?'true':'false');setV('d-notes',d.notes||'');
+      document.getElementById('d-breed-search').value=d.breed_name||d.breed_other||'';
+      document.getElementById('d-breed-id').value=d.breed_id||'';
+      let cfv={};
+      if(!DEMO){const {data}=await SB.from('dog_field_values').select('*').eq('dog_id',dogId);(data||[]).forEach(v=>cfv[v.field_id]=v.value);}
+      else (demoStore.field_values||[]).filter(v=>v.dog_id===dogId).forEach(v=>cfv[v.field_id]=v.value);
+      renderCFInputs(cfv);
+    }
+  }else{
+    ['d-name','d-weight','d-dob','d-color','d-notes'].forEach(id=>setV(id,''));
+    setV('d-sex','unknown');setV('d-size','medium');setV('d-neutered','false');
+    document.getElementById('d-breed-search').value='';document.getElementById('d-breed-id').value='';
+    renderCFInputs();
+  }
+  document.getElementById('dogModal').classList.add('open');
+}
+function closeDogModal(){document.getElementById('dogModal').classList.remove('open');}
+function renderCFInputs(values={}){
+  const sec=document.getElementById('custom-fields-section');
+  if(!customFields.length){sec.innerHTML='';return;}
+  sec.innerHTML=`<div class="sep"></div><div class="stag">Additional Info</div>`+customFields.map(f=>{
+    const val=values[f.id]||'';
+    const req=f.required?'<span class="req">*</span>':'';
+    let inp='';
+    if(f.field_type==='text')inp=`<input type="text" id="cf-v-${f.id}" value="${esc(val)}">`;
+    else if(f.field_type==='number')inp=`<input type="number" id="cf-v-${f.id}" value="${esc(val)}">`;
+    else if(f.field_type==='date')inp=`<input type="date" id="cf-v-${f.id}" value="${esc(val)}">`;
+    else if(f.field_type==='boolean')inp=`<select id="cf-v-${f.id}"><option value="">—</option><option value="Yes"${val==='Yes'?' selected':''}>Yes</option><option value="No"${val==='No'?' selected':''}>No</option></select>`;
+    else if(f.field_type==='select'){const opts=(f.options||[]).map(o=>`<option value="${esc(o)}"${val===o?' selected':''}>${esc(o)}</option>`).join('');inp=`<select id="cf-v-${f.id}"><option value="">— Select —</option>${opts}</select>`;}
+    return `<div class="field"><label>${esc(f.label)} ${req}</label>${inp}</div>`;
+  }).join('');
+}
+async function saveDog(){
+  const name=document.getElementById('d-name').value.trim();
+  const breedId=document.getElementById('d-breed-id').value;
+  const breedSearch=document.getElementById('d-breed-search').value.trim();
+  const err=document.getElementById('dog-err');
+  const btn=document.getElementById('saveDogBtn');
+  err.classList.remove('show');
+  if(!name){err.textContent='Dog name is required.';err.classList.add('show');return;}
+  if(!breedSearch){err.textContent='Please select a breed.';err.classList.add('show');return;}
+  for(const f of customFields.filter(x=>x.required)){const v=document.getElementById('cf-v-'+f.id)?.value?.trim();if(!v){err.textContent=`"${f.label}" is required.`;err.classList.add('show');return;}}
+  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
+  const dogData={name,size:document.getElementById('d-size').value,breed_id:breedId?parseInt(breedId):null,breed_other:breedId?null:breedSearch,sex:document.getElementById('d-sex').value,weight_lbs:document.getElementById('d-weight').value||null,dob:document.getElementById('d-dob').value||null,color:document.getElementById('d-color').value.trim()||null,neutered:document.getElementById('d-neutered').value==='true',notes:document.getElementById('d-notes').value.trim()||null,updated_at:new Date().toISOString()};
+  let savedId=editingDogId;
+  if(!DEMO){
+    if(editingDogId){const {error}=await SB.from('dogs').update(dogData).eq('id',editingDogId);if(error){err.textContent=error.message;err.classList.add('show');btn.innerHTML='Save Dog';btn.disabled=false;return;}}
+    else{dogData.owner_id=currentUser.id;dogData.active=true;const {data,error}=await SB.from('dogs').insert(dogData).select().single();if(error){err.textContent=error.message;err.classList.add('show');btn.innerHTML='Save Dog';btn.disabled=false;return;}savedId=data.id;}
+    for(const f of customFields){const el=document.getElementById('cf-v-'+f.id);if(!el)continue;const val=el.value.trim();await SB.from('dog_field_values').upsert({dog_id:savedId,field_id:f.id,value:val},{onConflict:'dog_id,field_id'});}
+  }else{
+    if(editingDogId){const i=demoStore.dogs.findIndex(d=>d.id===editingDogId);if(i>-1)demoStore.dogs[i]={...demoStore.dogs[i],...dogData};}
+    else{savedId='dog-'+Date.now();demoStore.dogs.push({id:savedId,owner_id:currentUser.id,active:true,...dogData,breed_name:allBreeds.find(b=>b.id==breedId)?.name||breedSearch});}
+    saveDemoStore();
+  }
+  btn.innerHTML='Save Dog';btn.disabled=false;
+  closeDogModal();toast('✅ Dog profile saved!');navigate('dogs');
+}
+
+// ════════════════════════════════════════════════════════════
+//  BREED SEARCH
+// ════════════════════════════════════════════════════════════
+function filterBreeds(){
+  const q=document.getElementById('d-breed-search').value.toLowerCase();
+  const dd=document.getElementById('breedDD');
+  if(!q){dd.innerHTML='';dd.classList.remove('open');document.getElementById('d-breed-id').value='';return;}
+  const matches=allBreeds.filter(b=>b.name.toLowerCase().includes(q)).slice(0,30);
+  if(!matches.length){dd.innerHTML='<div class="breed-opt" style="color:var(--light);">No breeds found</div>';dd.classList.add('open');return;}
+  dd.innerHTML=matches.map(b=>{const hi=b.name.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark>$1</mark>');return`<div class="breed-opt" onmousedown="selectBreed(${b.id},'${esc(b.name)}')">${hi}</div>`;}).join('');
+  dd.classList.add('open');
+}
+function openBreedDD(){if(document.getElementById('d-breed-search').value)filterBreeds();}
+function closeBreedDD(){document.getElementById('breedDD').classList.remove('open');}
+function selectBreed(id,name){document.getElementById('d-breed-search').value=name;document.getElementById('d-breed-id').value=id;document.getElementById('breedDD').classList.remove('open');}
+
+// ════════════════════════════════════════════════════════════
+//  VACCINATIONS
+// ════════════════════════════════════════════════════════════
+async function openVaccModal(dogId,vaccType){
+  document.getElementById('v-dog-id').value=dogId;document.getElementById('v-type').value=vaccType;document.getElementById('v-type-display').value=vaccType;
+  document.getElementById('v-err').classList.remove('show');document.getElementById('v-warn').classList.remove('show');
+  document.getElementById('vaccFileChosen').innerHTML='';document.getElementById('v-file').value='';
+  document.getElementById('vaccProgress').classList.remove('show');
+  document.getElementById('vaccModalTitle').textContent='Update: '+vaccType;
+  let existing=null;
+  if(!DEMO){const {data}=await SB.from('vaccinations').select('*').eq('dog_id',dogId).eq('vaccine_type',vaccType).single();existing=data;}
+  else existing=demoStore.vaccinations.find(v=>v.dog_id===dogId&&v.vaccine_type===vaccType);
+  setV('v-admin',existing?.administered||'');setV('v-expiry',existing?.expires_on||'');
+  const curFile=document.getElementById('v-current-file');
+  if(existing?.file_url){curFile.style.display='block';curFile.innerHTML=`<div class="file-chosen"><span>📎 ${esc(existing.file_name||'proof')}</span><a href="${existing.file_url}" target="_blank" style="font-size:12px;margin-left:auto;">View</a></div>`;}
+  else curFile.style.display='none';
+  document.getElementById('vaccModal').classList.add('open');
+}
+function closeVaccModal(){document.getElementById('vaccModal').classList.remove('open');}
+async function saveVacc(){
+  const dogId=document.getElementById('v-dog-id').value,vaccType=document.getElementById('v-type').value,expiry=document.getElementById('v-expiry').value;
+  const file=document.getElementById('v-file').files[0];const err=document.getElementById('v-err');const btn=document.getElementById('saveVaccBtn');
+  err.classList.remove('show');
+  if(!expiry){err.textContent='Expiration date is required.';err.classList.add('show');return;}
+  const today=new Date();today.setHours(0,0,0,0);
+  if(new Date(expiry)<today){document.getElementById('v-warn').textContent='⚠️ This vaccination is already expired.';document.getElementById('v-warn').classList.add('show');}
+  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
+  let fileUrl=null,fileName=null;
+  if(file&&!DEMO){
+    const path=`${currentUser.id}/${dogId}/${vaccType}-${Date.now()}.${file.name.split('.').pop()}`;
+    const prog=document.getElementById('vaccProgress'),fill=document.getElementById('vaccProgressFill');
+    prog.classList.add('show');fill.style.width='30%';
+    const {data,error}=await SB.storage.from('vaccination-proofs').upload(path,file,{upsert:true});
+    fill.style.width='80%';
+    if(!error){const {data:ud}=SB.storage.from('vaccination-proofs').getPublicUrl(path);fileUrl=ud?.publicUrl||null;fileName=file.name;}
+    fill.style.width='100%';setTimeout(()=>prog.classList.remove('show'),500);
+  }
+  const record={dog_id:dogId,vaccine_type:vaccType,expires_on:expiry,administered:document.getElementById('v-admin').value||null,updated_at:new Date().toISOString(),...(fileUrl&&{file_url:fileUrl,file_name:fileName})};
+  if(!DEMO)await SB.from('vaccinations').upsert(record,{onConflict:'dog_id,vaccine_type'});
+  else{const i=demoStore.vaccinations.findIndex(v=>v.dog_id===dogId&&v.vaccine_type===vaccType);if(i>-1)demoStore.vaccinations[i]={...demoStore.vaccinations[i],...record};else demoStore.vaccinations.push({id:'v-'+Date.now(),...record});saveDemoStore();}
+  btn.innerHTML='Save Vaccination';btn.disabled=false;
+  closeVaccModal();toast('✅ Vaccination saved!');navigate('dog-detail',{dogId});
+}
+
+// ════════════════════════════════════════════════════════════
+//  BOOKING FLOW
+// ════════════════════════════════════════════════════════════
+let bookState={dogId:null,serviceId:null,checkin:null,checkout:null};
+let calViewDate=new Date();
+
+async function renderBookPage(){
+  const el=document.getElementById('book-content');
+  const params=window._navParams||{};
+  if(params.dogId)bookState.dogId=params.dogId;
+
+  const dogs=await loadUserDogs();
+  if(!dogs.length){
+    el.innerHTML=`<div class="card"><div class="empty-state"><div class="ei">🐶</div><p>Add a dog first before making a reservation.</p><button class="btn btn-primary btn-sm" onclick="openDogModal()">Add a Dog</button></div></div>`;
+    return;
+  }
+
+  // vaccine check
+  const today=new Date();today.setHours(0,0,0,0);
+  const dogsWithValidVacc=dogs.filter(dog=>{
+    const vacc=dog.vaccinations||[];
+    return VACC_TYPES.every(t=>{const v=vacc.find(x=>x.vaccine_type===t);return v&&new Date(v.expires_on)>=today;});
+  });
+
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start;">
+      <div>
+        <!-- STEP 1: Select Dog -->
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-title">Step 1 — Select Dog</div>
+          ${dogs.map(d=>{
+            const vacc=d.vaccinations||[];
+            const allOk=VACC_TYPES.every(t=>{const v=vacc.find(x=>x.vaccine_type===t);return v&&new Date(v.expires_on)>=today;});
+            const hasExpired=VACC_TYPES.some(t=>{const v=vacc.find(x=>x.vaccine_type===t);return !v||new Date(v.expires_on)<today;});
+            return `<div class="dog-card ${bookState.dogId===d.id?'selected':''} ${!allOk?'':''}` +
+              `" id="bdog-${d.id}" onclick="${allOk?`selectBookDog('${d.id}')`:`toast('${d.name} has expired vaccinations. Please update them first.','error')`}" style="${!allOk?'opacity:.55;cursor:not-allowed;':''};display:inline-block;margin-bottom:8px;">` +
+              `<div class="dog-avatar">🐾</div><h3>${esc(d.name)}</h3><div class="dbreed">${esc(d.breed_name)}</div><span class="size-badge">${SIZE_LABELS[d.size]||d.size}</span>` +
+              `${!allOk?`<div style="font-size:11px;color:var(--red);margin-top:6px;font-weight:600;">⚠️ Vaccine expired — update to book</div>`:''}` +
+              `</div>`;
+          }).join('')}
+        </div>
+        <!-- STEP 2: Service -->
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-title">Step 2 — Select Service</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;" id="serviceCards">
+            ${services.map(s=>`<div class="card" id="bsvc-${s.id}" onclick="selectService('${s.id}')" style="cursor:pointer;border:2px solid ${bookState.serviceId===s.id?'var(--forest)':'var(--border)'};background:${bookState.serviceId===s.id?'var(--forest-p)':'var(--warm)'};padding:16px;">
+              <div style="font-size:15px;font-weight:600;">${esc(s.name)}</div>
+              <div style="font-size:12px;color:var(--mid);margin-top:3px;">${esc(s.description||'')} · Per ${s.unit}</div>
+              ${bookState.dogId?`<div style="font-size:17px;font-weight:700;color:var(--forest);margin-top:8px;">$${getRateForDog(s,bookState.dogId,dogs)}<span style="font-size:12px;color:var(--mid);font-weight:400;">/${s.unit}</span></div>`:''}
+            </div>`).join('')}
+          </div>
+        </div>
+        <!-- STEP 3: Dates -->
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-title">Step 3 — Select Dates</div>
+          <div class="field-row" style="margin-bottom:16px;">
+            <div class="field"><label>Drop-off Date & Time <span class="req">*</span></label><input type="datetime-local" id="bk-checkin" onchange="bookDatesChanged()"></div>
+            <div class="field"><label>Pick-up Date & Time <span class="req">*</span></label><input type="datetime-local" id="bk-checkout" onchange="bookDatesChanged()"></div>
+          </div>
+          ${renderCalendarHtml('book')}
+          <div style="margin-top:12px;" id="blockedWarning"></div>
+        </div>
+        <!-- STEP 4: Notes -->
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-title">Step 4 — Special Notes</div>
+          <div class="field"><label>Instructions for staff</label><textarea id="bk-notes" placeholder="Dietary needs, medications, feeding times, quirks, emergency contact…"></textarea></div>
+        </div>
+        <div class="alert alert-err" id="bk-err"></div>
+        <button class="btn btn-primary" onclick="submitBooking()" id="bk-submit">📅 Submit Reservation Request</button>
+      </div>
+      <!-- QUOTE PANEL -->
+      <div style="position:sticky;top:80px;">
+        <div class="quote-box">
+          <div style="font-size:15px;font-weight:600;margin-bottom:14px;">Your Estimate</div>
+          <div id="quoteLines"></div>
+          <div class="quote-total-row"><span>Estimated Total</span><strong id="quoteTotal">$0</strong></div>
+          <div style="margin-top:12px;font-size:11px;color:var(--mid);line-height:1.6;">
+            📌 Standard checkout is at the same time as drop-off the next cycle. Pickup more than ${pricingConfig.overstay_threshold_hrs}h late incurs ${pricingConfig.overstay_charge_pct}% overstay charge.
+          </div>
+        </div>
+      </div>
+    </div>`;
+  if(bookState.dogId)document.getElementById('bdog-'+bookState.dogId)?.classList.add('selected');
+  if(bookState.checkin)setV('bk-checkin',bookState.checkin);
+  if(bookState.checkout)setV('bk-checkout',bookState.checkout);
+  updateQuote(dogs);
+}
+
+function selectBookDog(dogId){
+  bookState.dogId=dogId;
+  document.querySelectorAll('[id^="bdog-"]').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('bdog-'+dogId)?.classList.add('selected');
+  loadUserDogs().then(dogs=>updateQuote(dogs));
+  // refresh service rate display
+  document.querySelectorAll('[id^="bsvc-"]').forEach(async el=>{
+    const svcId=el.id.replace('bsvc-','');const svc=services.find(s=>s.id===svcId);const dogs=await loadUserDogs();
+    el.querySelectorAll('div').forEach((d,i)=>{if(i===2)d.textContent='';});
+  });
+  renderBookPage();
+}
+function selectService(svcId){
+  bookState.serviceId=svcId;
+  document.querySelectorAll('[id^="bsvc-"]').forEach(el=>{
+    const id=el.id.replace('bsvc-','');
+    el.style.border=`2px solid ${id===svcId?'var(--forest)':'var(--border)'}`;
+    el.style.background=id===svcId?'var(--forest-p)':'var(--warm)';
+  });
+  loadUserDogs().then(dogs=>updateQuote(dogs));
+}
+function bookDatesChanged(){
+  bookState.checkin=document.getElementById('bk-checkin').value;
+  bookState.checkout=document.getElementById('bk-checkout').value;
+  checkBlockedDates();
+  loadUserDogs().then(dogs=>updateQuote(dogs));
+}
+function checkBlockedDates(){
+  const warn=document.getElementById('blockedWarning');if(!warn)return;
+  if(!bookState.checkin||!bookState.checkout){warn.innerHTML='';return;}
+  const start=new Date(bookState.checkin),end=new Date(bookState.checkout);
+  const blocked=[];
+  for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
+    const ds=d.toISOString().split('T')[0];
+    if(blockedDates.has(ds))blocked.push(fmtDate(ds));
+  }
+  warn.innerHTML=blocked.length?`<div class="alert alert-err show">⚠️ The following dates are blocked and unavailable: ${blocked.join(', ')}. Please choose different dates.</div>`:'';
+}
+function getRateForDog(svc,dogId,dogs){
+  if(!dogId||!dogs)return'—';
+  const dog=dogs.find(d=>d.id===dogId);if(!dog)return'—';
+  const rates=svc.service_rates||[];
+  const r=rates.find(x=>x.dog_size===dog.size);
+  return r?num(r.rate):'—';
+}
+function calcPrice(dogs){
+  const dog=dogs.find(d=>d.id===bookState.dogId);
+  const svc=services.find(s=>s.id===bookState.serviceId);
+  if(!dog||!svc||!bookState.checkin||!bookState.checkout)return null;
+  const checkin=new Date(bookState.checkin),checkout=new Date(bookState.checkout);
+  if(checkout<=checkin)return null;
+  const rates=svc.service_rates||[];
+  const rate=rates.find(r=>r.dog_size===dog.size);
+  if(!rate)return null;
+  const diffMs=checkout-checkin;
+  const totalHours=diffMs/3600000;
+  const periods=Math.floor(totalHours/24);
+  const remH=totalHours%24;
+  const overstay=remH>pricingConfig.overstay_threshold_hrs?(pricingConfig.overstay_charge_pct/100)*parseFloat(rate.rate):0;
+  const baseTotal=periods*parseFloat(rate.rate);
+  const subtotal=baseTotal+overstay;
+  return{rate:parseFloat(rate.rate),periods,remH,overstay,baseTotal,subtotal,unit:svc.unit,overstayPct:pricingConfig.overstay_charge_pct,threshold:pricingConfig.overstay_threshold_hrs};
+}
+function updateQuote(dogs){
+  const ql=document.getElementById('quoteLines');const qt=document.getElementById('quoteTotal');
+  if(!ql||!qt)return;
+  if(!dogs){loadUserDogs().then(updateQuote);return;}
+  const p=calcPrice(dogs);
+  if(!p){ql.innerHTML='<div style="font-size:13px;color:var(--mid);padding:8px 0;">Select dog, service, and dates to see estimate.</div>';qt.textContent='$0';return;}
+  const unitLabel=p.unit==='night'?'night':'day';
+  ql.innerHTML=`
+    <div class="quote-line"><span>Rate</span><strong>$${num(p.rate)}/${unitLabel}</strong></div>
+    <div class="quote-line"><span>${p.periods} ${unitLabel}${p.periods!==1?'s':''}</span><strong>$${num(p.baseTotal)}</strong></div>
+    ${p.overstay>0?`<div class="quote-line"><span>Overstay charge (${Math.round(p.remH*10)/10}h · ${p.overstayPct}% of daily)</span><strong style="color:var(--amber)">+$${num(p.overstay)}</strong></div>`:''}
+  `;
+  qt.textContent='$'+num(p.subtotal);
+}
+async function submitBooking(){
+  const err=document.getElementById('bk-err');const btn=document.getElementById('bk-submit');
+  err.classList.remove('show');
+  if(!bookState.dogId){err.textContent='Please select a dog.';err.classList.add('show');return;}
+  if(!bookState.serviceId){err.textContent='Please select a service.';err.classList.add('show');return;}
+  const checkinVal=document.getElementById('bk-checkin').value;
+  const checkoutVal=document.getElementById('bk-checkout').value;
+  if(!checkinVal||!checkoutVal){err.textContent='Please select check-in and check-out times.';err.classList.add('show');return;}
+  const checkin=new Date(checkinVal),checkout=new Date(checkoutVal);
+  if(checkout<=checkin){err.textContent='Check-out must be after check-in.';err.classList.add('show');return;}
+  // blocked date check
+  let hasBlocked=false;
+  for(let d=new Date(checkin);d<=checkout;d.setDate(d.getDate()+1)){if(blockedDates.has(d.toISOString().split('T')[0])){hasBlocked=true;break;}}
+  if(hasBlocked){err.textContent='Your selected dates include blocked/unavailable dates. Please choose different dates.';err.classList.add('show');return;}
+  const dogs=await loadUserDogs();
+  const p=calcPrice(dogs);
+  if(!p){err.textContent='Cannot calculate price. Check dog size and service rates.';err.classList.add('show');return;}
+  btn.innerHTML='<span class="spinner"></span> Submitting…';btn.disabled=true;
+  const record={
+    user_id:currentUser.id,dog_id:bookState.dogId,service_id:bookState.serviceId,
+    requested_checkin:checkin.toISOString(),requested_checkout:checkout.toISOString(),
+    status:'pending',base_rate:p.rate,nights_or_days:p.periods,overstay_charge:p.overstay,
+    addons_total:0,subtotal:p.subtotal,discount_amount:0,total_amount:p.subtotal,
+    special_notes:document.getElementById('bk-notes').value.trim()||null
+  };
+  if(!DEMO){
+    const {error}=await SB.from('reservations').insert(record);
+    if(error){err.textContent=error.message;err.classList.add('show');btn.innerHTML='📅 Submit Reservation Request';btn.disabled=false;return;}
+  }else{
+    const id='res-'+Date.now();
+    const dog=dogs.find(d=>d.id===bookState.dogId);
+    const svc=services.find(s=>s.id===bookState.serviceId);
+    demoStore.reservations.unshift({...record,id,dogs:{name:dog?.name||'?'},services:{name:svc?.name||'?'},created_at:new Date().toISOString()});
+    saveDemoStore();
+  }
+  btn.innerHTML='📅 Submit Reservation Request';btn.disabled=false;
+  bookState={dogId:null,serviceId:null,checkin:null,checkout:null};
+  toast('✅ Reservation submitted! We\'ll confirm within 24 hours.');
+  navigate('my-reservations');
+}
+
+// ════════════════════════════════════════════════════════════
+//  CALENDAR RENDER (shared util)
+// ════════════════════════════════════════════════════════════
+function renderCalendarHtml(context='book'){
+  const year=calViewDate.getFullYear(),month=calViewDate.getMonth();
+  const firstDay=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const today=new Date();today.setHours(0,0,0,0);
+  const monthName=calViewDate.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  let cells='';
+  for(let i=0;i<firstDay;i++)cells+=`<div class="cal-day cal-empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const date=new Date(year,month,d);date.setHours(0,0,0,0);
+    const ds=date.toISOString().split('T')[0];
+    const isPast=date<today;
+    const isBlocked=blockedDates.has(ds);
+    const isToday=date.getTime()===today.getTime();
+    let cls='cal-day';
+    if(isPast)cls+=' cal-past';
+    if(isBlocked)cls+=' cal-blocked';
+    if(isToday)cls+=' cal-today';
+    const label=isToday?`<span>${d}</span>`:`${d}`;
+    const onclick=(!isPast&&!isBlocked&&context==='book')?`onclick="calPickDate('${ds}')"`:(!isPast&&!isBlocked&&context==='admin')?`onclick="adminToggleDate('${ds}')"`:''
+    cells+=`<div class="${cls}" ${onclick}>${label}</div>`;
+  }
+  return `<div class="cal-wrap">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calPrev('${context}')">‹</button>
+      <h3>${monthName}</h3>
+      <button class="cal-nav" onclick="calNext('${context}')">›</button>
+    </div>
+    <div class="cal-grid">
+      ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-day-name">${d}</div>`).join('')}
+      ${cells}
+    </div>
+    <div class="cal-legend">
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--err-bg);border:1px solid var(--err-txt);"></div>Unavailable</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--forest-p);border:1px solid var(--forest);"></div>Today</div>
+    </div>
+  </div>`;
+}
+function calPrev(ctx){calViewDate=new Date(calViewDate.getFullYear(),calViewDate.getMonth()-1,1);if(ctx==='admin')renderAdminContent();else renderBookPage();}
+function calNext(ctx){calViewDate=new Date(calViewDate.getFullYear(),calViewDate.getMonth()+1,1);if(ctx==='admin')renderAdminContent();else renderBookPage();}
+function calPickDate(ds){
+  if(!bookState.checkin){bookState.checkin=ds+'T10:00';setV('bk-checkin',bookState.checkin);}
+  else if(!bookState.checkout&&ds>bookState.checkin.split('T')[0]){bookState.checkout=ds+'T10:00';setV('bk-checkout',bookState.checkout);}
+  else{bookState.checkin=ds+'T10:00';bookState.checkout=null;setV('bk-checkin',bookState.checkin);setV('bk-checkout','');}
+  checkBlockedDates();loadUserDogs().then(updateQuote);
+}
+
+// ════════════════════════════════════════════════════════════
+//  MY RESERVATIONS (user)
+// ════════════════════════════════════════════════════════════
+async function renderMyReservations(){
+  const el=document.getElementById('my-res-content');
+  el.innerHTML='<div style="padding:20px;color:var(--mid);">Loading…</div>';
+  let res=[];
+  if(!DEMO){
+    const {data}=await SB.from('reservations').select('*,dogs(name,size),services(name,unit),discounts(*)').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+    res=data||[];
+  }else{
+    res=(demoStore.reservations||[]).filter(r=>r.user_id===currentUser.id).map(r=>({...r,
+      dogs:{name:(demoStore.dogs||[]).find(d=>d.id===r.dog_id)?.name||'?',size:(demoStore.dogs||[]).find(d=>d.id===r.dog_id)?.size||'?'},
+      services:{name:(demoStore.services||[]).find(s=>s.id===r.service_id)?.name||'?',unit:(demoStore.services||[]).find(s=>s.id===r.service_id)?.unit||'night'},
+      discounts:[]
+    }));
+  }
+  if(!res.length){el.innerHTML=`<div class="card"><div class="empty-state"><div class="ei">📅</div><p>No reservations yet.</p><button class="btn btn-primary btn-sm" onclick="navigate('book')">Book a Stay</button></div></div>`;return;}
+  el.innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>Dog</th><th>Service</th><th>Requested Check-in</th><th>Requested Checkout</th><th>Actual Check-in</th><th>Actual Checkout</th><th>Total</th><th>Status</th><th>Notes</th></tr></thead>
+    <tbody>${res.map(r=>`<tr>
+      <td class="td-strong">🐾 ${esc(r.dogs?.name||'?')}</td>
+      <td>${esc(r.services?.name||'?')}</td>
+      <td>${fmtDT(r.requested_checkin)}</td>
+      <td>${fmtDT(r.requested_checkout)}</td>
+      <td>${r.actual_checkin?fmtDT(r.actual_checkin):'<span style="color:var(--light);">—</span>'}</td>
+      <td>${r.actual_checkout?fmtDT(r.actual_checkout):'<span style="color:var(--light);">—</span>'}</td>
+      <td><strong>$${num(r.total_amount||0)}</strong>${r.discount_amount>0?`<br><span style="font-size:11px;color:var(--ok-txt);">-$${num(r.discount_amount)} discount</span>`:''}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td style="max-width:140px;font-size:12px;color:var(--light);">${r.rejection_reason?`<span style="color:var(--err-txt);">Rejected: ${esc(r.rejection_reason)}</span>`:esc(r.special_notes||'—')}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  ADMIN — RESERVATIONS TABLE
+// ════════════════════════════════════════════════════════════
+async function renderAllReservations(el,filter='all'){
+  let res=[];
+  if(!DEMO){
+    let q=SB.from('reservations').select('*,dogs(name,size),profiles(first_name,last_name),services(name,unit),discounts(*)').order('created_at',{ascending:false});
+    if(filter!=='all')q=q.eq('status',filter);
+    const {data}=await q;res=data||[];
+  }else{
+    res=(demoStore.reservations||[]).map(r=>({...r,
+      dogs:{name:(demoStore.dogs||[]).find(d=>d.id===r.dog_id)?.name||'?',size:(demoStore.dogs||[]).find(d=>d.id===r.dog_id)?.size||'medium'},
+      profiles:{first_name:(demoStore.users||[]).find(u=>u.id===r.user_id)?.first_name||'?',last_name:(demoStore.users||[]).find(u=>u.id===r.user_id)?.last_name||''},
+      services:{name:(demoStore.services||[]).find(s=>s.id===r.service_id)?.name||'?',unit:'night'},discounts:[]
+    }));
+    if(filter!=='all')res=res.filter(r=>r.status===filter);
+  }
+  const filters=['all','pending','confirmed','checked_in','completed','cancelled','rejected'];
+  el.innerHTML=`
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      ${filters.map(f=>`<button class="btn btn-sm ${filter===f?'btn-primary':'btn-secondary'}" onclick="renderAllReservations(document.getElementById('admin-content'),'${f}')" style="border-radius:100px;">${f.replace('_',' ')}</button>`).join('')}
+    </div>
+    ${!res.length?'<div class="empty-state"><div class="ei">📋</div><p>No reservations found.</p></div>':`
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>#</th><th>Dog</th><th>Owner</th><th>Service</th><th>Check-in</th><th>Check-out</th><th>Duration</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>${res.map(r=>resRowHtml(r,false)).join('')}</tbody>
+    </table></div>`}`;
+}
+function resRowHtml(r,compact){
+  const dur=r.nights_or_days?`${r.nights_or_days} ${r.services?.unit||'night'}${r.nights_or_days!==1?'s':''}`:calcDurationLabel(r.requested_checkin,r.requested_checkout,r.services?.unit);
+  return `<tr>
+    <td style="color:var(--light);font-size:11px;">${String(r.id||'').slice(-6)}</td>
+    <td class="td-strong">🐾 ${esc(r.dogs?.name||'?')} <span class="size-badge" style="font-size:9px;">${SIZE_LABELS[r.dogs?.size||'']||''}</span></td>
+    <td>${esc(r.profiles?.first_name||'')} ${esc(r.profiles?.last_name||'')}</td>
+    <td>${esc(r.services?.name||'?')}</td>
+    <td style="white-space:nowrap;">${fmtDT(r.requested_checkin)}</td>
+    <td style="white-space:nowrap;">${fmtDT(r.requested_checkout)}</td>
+    <td>${dur}</td>
+    <td><strong>$${num(r.total_amount||0)}</strong>${(r.discount_amount||0)>0?`<br><span style="font-size:10px;color:var(--ok-txt)">-$${num(r.discount_amount)}</span>`:''}</td>
+    <td>${statusBadge(r.status)}</td>
+    <td><div style="display:flex;gap:5px;flex-wrap:wrap;">
+      <button class="btn btn-xs btn-secondary" onclick="openResModal('${r.id}')">Details</button>
+      ${r.status==='pending'?`<button class="btn btn-xs" style="background:var(--ok-bg);color:var(--ok-txt);border-radius:8px;" onclick="approveReservation('${r.id}')">✓ Approve</button><button class="btn btn-xs btn-danger" style="border-radius:8px;" onclick="openRejectModal('${r.id}')">✕ Reject</button>`:''}
+      ${r.status==='confirmed'?`<button class="btn btn-xs" style="background:#DBEAFE;color:#1E40AF;border-radius:8px;" onclick="checkInReservation('${r.id}')">Check In</button>`:''}
+      ${r.status==='checked_in'?`<button class="btn btn-xs" style="background:var(--info-bg);color:var(--info-txt);border-radius:8px;" onclick="openResModal('${r.id}')">Check Out</button>`:''}
+    </div></td>
+  </tr>`;
+}
+function calcDurationLabel(ci,co,unit){
+  if(!ci||!co)return'—';
+  const h=(new Date(co)-new Date(ci))/3600000;
+  const n=Math.floor(h/24);
+  const u=unit||'night';
+  return n+' '+u+(n!==1?'s':'');
+}
+
+// ── APPROVE / REJECT / CHECK-IN / CHECK-OUT ──
+async function approveReservation(id){
+  await updateResStatus(id,'confirmed');toast('✅ Reservation confirmed!');renderAdminContent();}
+function openRejectModal(id){document.getElementById('rej-id').value=id;document.getElementById('rej-reason').value='';document.getElementById('rej-err').classList.remove('show');document.getElementById('rejectModal').classList.add('open');}
+function closeRejectModal(){document.getElementById('rejectModal').classList.remove('open');}
+async function confirmReject(){
+  const id=document.getElementById('rej-id').value;
+  const reason=document.getElementById('rej-reason').value.trim();
+  if(!reason){document.getElementById('rej-err').textContent='Please enter a reason.';document.getElementById('rej-err').classList.add('show');return;}
+  if(!DEMO)await SB.from('reservations').update({status:'rejected',rejection_reason:reason,updated_at:new Date().toISOString()}).eq('id',id);
+  else{const i=demoStore.reservations.findIndex(r=>r.id===id);if(i>-1){demoStore.reservations[i].status='rejected';demoStore.reservations[i].rejection_reason=reason;}saveDemoStore();}
+  closeRejectModal();toast('Reservation rejected.');renderAdminContent();
+}
+async function checkInReservation(id){await updateResStatus(id,'checked_in');toast('✅ Dog checked in!');renderAdminContent();}
+async function updateResStatus(id,status){
+  if(!DEMO)await SB.from('reservations').update({status,updated_at:new Date().toISOString()}).eq('id',id);
+  else{const i=demoStore.reservations.findIndex(r=>r.id===id);if(i>-1)demoStore.reservations[i].status=status;saveDemoStore();}
+}
+
+// ── RESERVATION DETAIL MODAL (admin - full management) ──
+async function openResModal(id){
+  document.getElementById('resModalTitle').textContent='Reservation #'+String(id).slice(-6);
+  document.getElementById('resModal').classList.add('open');
+  document.getElementById('resModalContent').innerHTML='<div style="padding:20px;color:var(--mid);">Loading…</div>';
+  let r=null;
+  if(!DEMO){const {data}=await SB.from('reservations').select('*,dogs(name,size,breed_other,breeds(name)),profiles(first_name,last_name,phone),services(name,unit,service_rates(*)),discounts(*)').eq('id',id).single();r=data;}
+  else{
+    r=(demoStore.reservations||[]).find(x=>x.id===id);
+    if(r){const dog=(demoStore.dogs||[]).find(d=>d.id===r.dog_id)||{};const svc=(demoStore.services||[]).find(s=>s.id===r.service_id)||{};const usr=(demoStore.users||[]).find(u=>u.id===r.user_id)||{};
+    r={...r,dogs:{name:dog.name,size:dog.size,breeds:{name:dog.breed_name}},profiles:{first_name:usr.first_name,last_name:usr.last_name,phone:usr.phone},services:{...svc},discounts:(demoStore.discounts||[]).filter(d=>d.reservation_id===id)};}
+  }
+  if(!r){document.getElementById('resModalContent').innerHTML='<div class="alert alert-err show">Reservation not found.</div>';return;}
+  const discount=r.discounts?.[0];
+  document.getElementById('resModalContent').innerHTML=`
+    <div class="res-timeline">${resTimeline(r.status)}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div class="card"><div class="card-title">🐾 Dog</div>
+        ${[['Name',r.dogs?.name],['Breed',r.dogs?.breeds?.name||r.dogs?.breed_other||'—'],['Size',SIZE_LABELS[r.dogs?.size||'']||'—']].map(([l,v])=>`<div class="profile-row"><span>${l}</span><span>${esc(v||'—')}</span></div>`).join('')}
+      </div>
+      <div class="card"><div class="card-title">👤 Owner</div>
+        ${[['Name',`${r.profiles?.first_name||''} ${r.profiles?.last_name||''}`],['Phone',r.profiles?.phone||'—']].map(([l,v])=>`<div class="profile-row"><span>${l}</span><span>${esc(v||'—')}</span></div>`).join('')}
+      </div>
+    </div>
+    <!-- TIMES -->
+    <div class="card" style="margin-bottom:14px;"><div class="card-title">📅 Schedule</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <div class="stag" style="margin-bottom:8px;">Requested</div>
+          ${[['Check-in',fmtDT(r.requested_checkin)],['Check-out',fmtDT(r.requested_checkout)]].map(([l,v])=>`<div class="profile-row"><span>${l}</span><span>${v}</span></div>`).join('')}
+        </div>
+        <div>
+          <div class="stag" style="margin-bottom:8px;">Actual (admin-managed)</div>
+          <div class="field"><label>Actual Check-in</label><input type="datetime-local" id="rm-checkin" value="${r.actual_checkin?r.actual_checkin.slice(0,16):''}" onchange="recalcModal()"></div>
+          <div class="field"><label>Actual Check-out</label><input type="datetime-local" id="rm-checkout" value="${r.actual_checkout?r.actual_checkout.slice(0,16):''}" onchange="recalcModal()"></div>
+        </div>
+      </div>
+    </div>
+    <!-- PRICING -->
+    <div class="card" style="margin-bottom:14px;"><div class="card-title">💰 Pricing</div>
+      <input type="hidden" id="rm-id" value="${r.id}">
+      <input type="hidden" id="rm-rate" value="${r.base_rate||0}">
+      <input type="hidden" id="rm-size" value="${r.dogs?.size||'medium'}">
+      <input type="hidden" id="rm-svcid" value="${r.service_id}">
+      <div id="rm-quote"></div>
+      <!-- DISCOUNT -->
+      <div class="discount-box" style="margin-top:14px;">
+        <h4>🏷️ Apply Discount</h4>
+        <div class="field-row">
+          <div class="field"><label>Discount Type</label>
+            <select id="rm-disc-type"><option value="">None</option><option value="flat" ${discount?.discount_type==='flat'?'selected':''}>Flat amount ($)</option><option value="percent" ${discount?.discount_type==='percent'?'selected':''}>Percentage (%)</option></select>
+          </div>
+          <div class="field"><label>Value</label><input type="number" id="rm-disc-val" min="0" step="0.01" value="${discount?.value||''}" placeholder="0" onchange="recalcModal()"></div>
+        </div>
+        <div class="field"><label>Reason</label><input type="text" id="rm-disc-reason" value="${esc(discount?.reason||'')}" placeholder="e.g. Loyalty discount, first-time client"></div>
+      </div>
+    </div>
+    <!-- NOTES -->
+    <div class="card" style="margin-bottom:14px;"><div class="card-title">📝 Notes</div>
+      <div class="field"><label>Client's Notes</label><input type="text" value="${esc(r.special_notes||'—')}" readonly style="background:var(--cream);"></div>
+      <div class="field"><label>Admin Notes</label><textarea id="rm-admin-notes">${esc(r.admin_notes||'')}</textarea></div>
+    </div>
+    <!-- STATUS ACTIONS -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-primary" onclick="saveResModal('${r.id}')">💾 Save Changes</button>
+      ${r.status==='pending'?`<button class="btn" style="background:var(--ok-bg);color:var(--ok-txt);" onclick="approveReservation('${r.id}');closeResModal()">✓ Approve</button><button class="btn btn-danger" onclick="openRejectModal('${r.id}');closeResModal()">✕ Reject</button>`:''}
+      ${r.status==='confirmed'?`<button class="btn" style="background:#DBEAFE;color:#1E40AF;" onclick="checkInReservation('${r.id}');closeResModal()">🏠 Check In</button>`:''}
+      ${r.status==='checked_in'?`<button class="btn btn-primary" onclick="checkoutReservation('${r.id}')">✓ Complete Check-out</button>`:''}
+      ${(r.status==='confirmed'||r.status==='checked_in')?`<button class="btn btn-danger" onclick="cancelReservation('${r.id}');closeResModal()">Cancel</button>`:''}
+    </div>`;
+  recalcModal();
+}
+function resTimeline(status){
+  const steps=['pending','confirmed','checked_in','completed'];
+  const statusOrder={pending:0,confirmed:1,checked_in:2,completed:3,rejected:-1,cancelled:-1};
+  const cur=statusOrder[status]??0;
+  if(status==='rejected'||status==='cancelled'){
+    return `<div style="padding:10px 0;"><span class="badge ${status==='rejected'?'badge-rejected':'badge-cancelled'}" style="font-size:13px;padding:6px 16px;">${status==='rejected'?'❌ Rejected':'🚫 Cancelled'}</span></div>`;
+  }
+  return steps.map((s,i)=>{
+    const cls=i<cur?'done':i===cur?'active':'';
+    const icon={pending:'📋',confirmed:'✓',checked_in:'🏠',completed:'⭐'}[s]||s[0];
+    return (i>0?`<div class="rt-line ${i<=cur?'done':''}"></div>`:'')+
+      `<div class="rt-step"><div class="rt-dot ${cls}">${icon}</div><div class="rt-label">${s.replace('_',' ')}</div></div>`;
+  }).join('');
+}
+function recalcModal(){
+  const el=document.getElementById('rm-quote');if(!el)return;
+  const checkinVal=document.getElementById('rm-checkin')?.value;
+  const checkoutVal=document.getElementById('rm-checkout')?.value;
+  const rate=parseFloat(document.getElementById('rm-rate')?.value||0);
+  const svcId=document.getElementById('rm-svcid')?.value;
+  const svc=services.find(s=>s.id===svcId)||{unit:'night'};
+  const discType=document.getElementById('rm-disc-type')?.value;
+  const discVal=parseFloat(document.getElementById('rm-disc-val')?.value||0)||0;
+  if(!rate||!checkinVal||!checkoutVal){el.innerHTML='<div class="quote-line"><span>Enter actual times to recalculate</span><strong>—</strong></div>';return;}
+  const ci=new Date(checkinVal),co=new Date(checkoutVal);
+  if(co<=ci){el.innerHTML='<div class="alert alert-err show">Check-out must be after check-in.</div>';return;}
+  const totalH=(co-ci)/3600000;
+  const periods=Math.floor(totalH/24);
+  const remH=totalH%24;
+  const overstay=remH>pricingConfig.overstay_threshold_hrs?(pricingConfig.overstay_charge_pct/100)*rate:0;
+  const subtotal=periods*rate+overstay;
+  let discAmt=0;
+  if(discType==='flat')discAmt=Math.min(discVal,subtotal);
+  else if(discType==='percent')discAmt=subtotal*(discVal/100);
+  const total=Math.max(0,subtotal-discAmt);
+  document.getElementById('rm-quote').dataset.subtotal=subtotal;
+  document.getElementById('rm-quote').dataset.total=total;
+  document.getElementById('rm-quote').dataset.discamt=discAmt;
+  document.getElementById('rm-quote').dataset.periods=periods;
+  document.getElementById('rm-quote').dataset.overstay=overstay;
+  el.innerHTML=`
+    <div class="quote-line"><span>Rate</span><strong>$${num(rate)}/${svc.unit||'night'}</strong></div>
+    <div class="quote-line"><span>${periods} ${svc.unit||'night'}${periods!==1?'s':''}</span><strong>$${num(periods*rate)}</strong></div>
+    ${overstay>0?`<div class="quote-line"><span>Overstay (${Math.round(remH*10)/10}h)</span><strong style="color:var(--amber)">+$${num(overstay)}</strong></div>`:''}
+    <div class="quote-line"><span>Subtotal</span><strong>$${num(subtotal)}</strong></div>
+    ${discAmt>0?`<div class="discount-row"><span>Discount ${discType==='percent'?`(${discVal}%)`:'(flat)'}</span><span>-$${num(discAmt)}</span></div>`:''}
+    <div class="quote-total-row"><span>Total</span><strong>$${num(total)}</strong></div>`;
+}
+async function saveResModal(id){
+  const checkinVal=document.getElementById('rm-checkin')?.value;
+  const checkoutVal=document.getElementById('rm-checkout')?.value;
+  const adminNotes=document.getElementById('rm-admin-notes')?.value.trim()||null;
+  const discType=document.getElementById('rm-disc-type')?.value;
+  const discVal=parseFloat(document.getElementById('rm-disc-val')?.value||0)||0;
+  const discReason=document.getElementById('rm-disc-reason')?.value.trim()||null;
+  const qEl=document.getElementById('rm-quote');
+  const subtotal=parseFloat(qEl?.dataset.subtotal||0);
+  const discAmt=parseFloat(qEl?.dataset.discamt||0);
+  const total=parseFloat(qEl?.dataset.total||subtotal);
+  const nights=parseInt(qEl?.dataset.periods||0);
+  const overstay=parseFloat(qEl?.dataset.overstay||0);
+  const updates={updated_at:new Date().toISOString(),admin_notes:adminNotes,
+    ...(checkinVal&&{actual_checkin:new Date(checkinVal).toISOString()}),
+    ...(checkoutVal&&{actual_checkout:new Date(checkoutVal).toISOString()}),
+    ...(subtotal>0&&{subtotal,total_amount:total,discount_amount:discAmt,nights_or_days:nights,overstay_charge:overstay})};
+  if(!DEMO){
+    await SB.from('reservations').update(updates).eq('id',id);
+    if(discType&&discVal>0){await SB.from('discounts').upsert({reservation_id:id,discount_type:discType,value:discVal,reason:discReason,applied_by:currentUser.id},{onConflict:'reservation_id'});}
+    else if(!discType){await SB.from('discounts').delete().eq('reservation_id',id);}
+  }else{
+    const i=demoStore.reservations.findIndex(r=>r.id===id);if(i>-1)Object.assign(demoStore.reservations[i],updates);
+    if(!demoStore.discounts)demoStore.discounts=[];
+    if(discType&&discVal>0){const di=demoStore.discounts.findIndex(d=>d.reservation_id===id);const rec={id:'disc-'+Date.now(),reservation_id:id,discount_type:discType,value:discVal,reason:discReason};if(di>-1)demoStore.discounts[di]=rec;else demoStore.discounts.push(rec);}
+    else demoStore.discounts=demoStore.discounts.filter(d=>d.reservation_id!==id);
+    saveDemoStore();
+  }
+  toast('✅ Reservation saved!');closeResModal();renderAdminContent();
+}
+async function checkoutReservation(id){
+  const qEl=document.getElementById('rm-quote');
+  const total=parseFloat(qEl?.dataset.total||0);
+  const updates={status:'completed',updated_at:new Date().toISOString(),...(total>0&&{total_amount:total})};
+  if(!DEMO)await SB.from('reservations').update(updates).eq('id',id);
+  else{const i=demoStore.reservations.findIndex(r=>r.id===id);if(i>-1)Object.assign(demoStore.reservations[i],updates);saveDemoStore();}
+  toast('✅ Check-out complete! Reservation marked as completed.');closeResModal();renderAdminContent();
+}
+async function cancelReservation(id){
+  if(!confirm('Cancel this reservation?'))return;
+  await updateResStatus(id,'cancelled');toast('Reservation cancelled.');closeResModal();renderAdminContent();
+}
+function closeResModal(){document.getElementById('resModal').classList.remove('open');}
+
+// ════════════════════════════════════════════════════════════
+//  ADMIN — CALENDAR MANAGEMENT
+// ════════════════════════════════════════════════════════════
+async function renderAdminCalendar(el){
+  await loadBlockedDates();
+  const upcoming=Array.from(blockedDates).filter(d=>d>=new Date().toISOString().split('T')[0]).sort();
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+      <div>
+        <div style="font-size:14px;color:var(--mid);margin-bottom:14px;">Click any available date to block it. Click a blocked date to unblock it.</div>
+        ${renderCalendarHtml('admin')}
+      </div>
+      <div class="card">
+        <div class="card-title">🚫 Blocked Dates</div>
+        ${upcoming.length?upcoming.map(d=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:14px;">${fmtDate(d)}</span>
+            <button class="btn btn-xs btn-secondary" onclick="adminToggleDate('${d}')">Unblock</button>
+          </div>`).join(''):'<div class="empty-state" style="padding:20px;"><p>No dates are currently blocked.</p></div>'}
+      </div>
+    </div>`;
+}
+async function adminToggleDate(ds){
+  if(blockedDates.has(ds)){
+    if(!DEMO)await SB.from('blocked_dates').delete().eq('date',ds);
+    else{demoStore.blocked_dates=(demoStore.blocked_dates||[]).filter(d=>d.date!==ds);saveDemoStore();}
+    blockedDates.delete(ds);toast('📅 Date unblocked: '+fmtDate(ds));
+  }else{
+    if(!DEMO)await SB.from('blocked_dates').insert({date:ds,reason:'Blocked by admin'});
+    else{if(!demoStore.blocked_dates)demoStore.blocked_dates=[];demoStore.blocked_dates.push({date:ds,reason:'Blocked by admin'});saveDemoStore();}
+    blockedDates.add(ds);toast('🚫 Date blocked: '+fmtDate(ds));
+  }
+  renderAdminContent();
+}
+
+// ════════════════════════════════════════════════════════════
+//  ADMIN PANEL ROUTER
+// ════════════════════════════════════════════════════════════
+let currentAdminTab='reservations';
+function adminTab(tab,el){currentAdminTab=tab;document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderAdminContent();}
+function renderAdmin(){renderAdminContent();}
+async function renderAdminContent(){
+  const el=document.getElementById('admin-content');
+  if(currentAdminTab==='reservations')await renderAllReservations(el);
+  else if(currentAdminTab==='calendar')await renderAdminCalendar(el);
+  else if(currentAdminTab==='fields')await renderFieldsAdmin(el);
+  else if(currentAdminTab==='services')await renderServicesAdmin(el);
+  else if(currentAdminTab==='users')await renderUsersAdmin(el);
+  else if(currentAdminTab==='config')await renderConfigAdmin(el);
+}
+
+// ── FIELDS ──
+async function renderFieldsAdmin(el){
+  await loadCustomFields();
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><div><div style="font-size:15px;font-weight:500;">Dog Profile Custom Fields</div><div style="font-size:13px;color:var(--mid);margin-top:2px;">These fields appear on every dog profile form.</div></div><button class="btn btn-primary btn-sm" onclick="openCfModal()">+ Add Field</button></div>
+  ${customFields.length?customFields.map(f=>`<div class="cf-row"><span class="cf-label">${esc(f.label)}</span><span class="cf-type">${f.field_type}</span>${f.required?'<span style="font-size:11px;color:var(--red);">required</span>':''}<button class="btn-icon" onclick="openCfModal('${f.id}')">✏️</button><button class="btn-icon" onclick="deleteCf('${f.id}')" style="background:var(--err-bg);color:var(--err-txt);">🗑</button></div>`).join(''):'<div class="empty-state"><div class="ei">📋</div><p>No custom fields. Add your first one!</p></div>'}`;
+}
+async function openCfModal(cfId=null){document.getElementById('cf-id').value=cfId||'';document.getElementById('cf-err').classList.remove('show');document.getElementById('cfModalTitle').textContent=cfId?'Edit Field':'Add Custom Field';if(cfId){const f=customFields.find(x=>x.id===cfId);if(f){setV('cf-label',f.label);setV('cf-type',f.field_type);setV('cf-options',(f.options||[]).join('\n'));document.getElementById('cf-required').checked=f.required;cfTypeChange();}}else{setV('cf-label','');setV('cf-type','text');setV('cf-options','');document.getElementById('cf-required').checked=false;cfTypeChange();}document.getElementById('cfModal').classList.add('open');}
+function closeCfModal(){document.getElementById('cfModal').classList.remove('open');}
+function cfTypeChange(){document.getElementById('cf-options-field').style.display=document.getElementById('cf-type').value==='select'?'block':'none';}
+async function saveCf(){
+  const label=document.getElementById('cf-label').value.trim(),type=document.getElementById('cf-type').value,required=document.getElementById('cf-required').checked,cfId=document.getElementById('cf-id').value;
+  const options=type==='select'?document.getElementById('cf-options').value.split('\n').map(s=>s.trim()).filter(Boolean):null;
+  if(!label){document.getElementById('cf-err').textContent='Label required.';document.getElementById('cf-err').classList.add('show');return;}
+  const data={label,field_type:type,required,options,active:true,sort_order:customFields.length};
+  if(!DEMO){if(cfId)await SB.from('dog_custom_fields').update(data).eq('id',cfId);else await SB.from('dog_custom_fields').insert(data);}
+  else{if(cfId){const i=demoStore.custom_fields.findIndex(f=>f.id===cfId);if(i>-1)demoStore.custom_fields[i]={...demoStore.custom_fields[i],...data};}else demoStore.custom_fields.push({id:'cf-'+Date.now(),...data});saveDemoStore();}
+  await loadCustomFields();closeCfModal();toast('✅ Field saved!');renderAdminContent();
+}
+async function deleteCf(cfId){if(!confirm('Delete this field?'))return;if(!DEMO)await SB.from('dog_custom_fields').update({active:false}).eq('id',cfId);else{demoStore.custom_fields=demoStore.custom_fields.filter(f=>f.id!==cfId);saveDemoStore();}await loadCustomFields();toast('Field removed.');renderAdminContent();}
+
+// ── SERVICES ──
+async function renderServicesAdmin(el){
+  await loadServices();
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><div><div style="font-size:15px;font-weight:500;">Services & Rates</div><div style="font-size:13px;color:var(--mid);">Manage available services and per-size pricing.</div></div><button class="btn btn-primary btn-sm" onclick="openSvcModal()">+ Add Service</button></div>
+  ${services.map(svc=>{const rates=svc.service_rates||[];return`<div class="card" style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div><div style="font-size:15px;font-weight:600;">${esc(svc.name)}</div><div style="font-size:12px;color:var(--mid);">${esc(svc.description||'')} · Per ${svc.unit}</div></div><div style="display:flex;gap:8px;"><button class="btn-icon" onclick="openSvcModal('${svc.id}')">✏️</button><button class="btn-icon" onclick="toggleService('${svc.id}',false)" style="background:var(--err-bg);color:var(--err-txt);">🗑</button></div></div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${['small','medium','large','xlarge'].map(sz=>{const r=rates.find(x=>x.dog_size===sz);return`<div style="text-align:center;padding:10px;background:var(--cream);border-radius:10px;"><div style="font-size:11px;color:var(--light);text-transform:uppercase;letter-spacing:.06em;">${SIZE_LABELS[sz]}</div><div style="font-size:18px;font-weight:700;color:var(--forest);margin-top:3px;">$${r?num(r.rate):'—'}</div></div>`;}).join('')}</div></div>`;}).join('')}`;
+}
+async function openSvcModal(svcId=null){document.getElementById('svc-id').value=svcId||'';document.getElementById('svc-err').classList.remove('show');document.getElementById('svcModalTitle').textContent=svcId?'Edit Service':'Add Service';if(svcId){const s=services.find(x=>x.id===svcId);if(s){setV('svc-name',s.name);setV('svc-desc',s.description||'');setV('svc-unit',s.unit);const rates=s.service_rates||[];['small','medium','large','xlarge'].forEach(sz=>{const r=rates.find(x=>x.dog_size===sz);setV('svc-r-'+sz,r?r.rate:'');});}}else{['svc-name','svc-desc'].forEach(id=>setV(id,''));setV('svc-unit','night');['small','medium','large','xlarge'].forEach(sz=>setV('svc-r-'+sz,''));}document.getElementById('svcModal').classList.add('open');}
+function closeSvcModal(){document.getElementById('svcModal').classList.remove('open');}
+async function saveSvc(){
+  const name=document.getElementById('svc-name').value.trim(),svcId=document.getElementById('svc-id').value;
+  if(!name){document.getElementById('svc-err').textContent='Name required.';document.getElementById('svc-err').classList.add('show');return;}
+  const svcData={name,description:document.getElementById('svc-desc').value.trim()||null,unit:document.getElementById('svc-unit').value,active:true};
+  let savedSvcId=svcId;
+  if(!DEMO){
+    if(svcId)await SB.from('services').update(svcData).eq('id',svcId);
+    else{const {data}=await SB.from('services').insert(svcData).select().single();savedSvcId=data?.id;}
+    for(const sz of['small','medium','large','xlarge']){const rate=document.getElementById('svc-r-'+sz).value;if(rate!=='')await SB.from('service_rates').upsert({service_id:savedSvcId,dog_size:sz,rate:parseFloat(rate)},{onConflict:'service_id,dog_size'});}
+  }else{
+    if(svcId){const i=demoStore.services.findIndex(s=>s.id===svcId);if(i>-1)demoStore.services[i]={...demoStore.services[i],...svcData};}
+    else{savedSvcId='svc-'+Date.now();const rates=['small','medium','large','xlarge'].map(sz=>({dog_size:sz,rate:parseFloat(document.getElementById('svc-r-'+sz).value)||0}));demoStore.services.push({id:savedSvcId,...svcData,service_rates:rates});}
+    saveDemoStore();
+  }
+  await loadServices();closeSvcModal();toast('✅ Service saved!');renderAdminContent();
+}
+async function toggleService(svcId,active){if(!confirm('Deactivate this service?'))return;if(!DEMO)await SB.from('services').update({active}).eq('id',svcId);else{const i=demoStore.services.findIndex(s=>s.id===svcId);if(i>-1)demoStore.services[i].active=active;saveDemoStore();}await loadServices();toast('Service updated.');renderAdminContent();}
+
+// ── USERS ──
+async function renderUsersAdmin(el){
+  let users=[],dogs=[];
+  if(!DEMO){const {data:u}=await SB.from('profiles').select('*');const {data:d}=await SB.from('dogs').select('*,vaccinations(*)').eq('active',true);users=u||[];dogs=d||[];}
+  else{users=demoStore.users||[];dogs=demoStore.dogs||[];}
+  const today=new Date();today.setHours(0,0,0,0);
+  const wd=new Date(today);wd.setDate(wd.getDate()+pricingConfig.vacc_warning_days);
+  el.innerHTML=`<div style="font-size:15px;font-weight:500;margin-bottom:14px;">Registered Clients</div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Name</th><th>Email / ID</th><th>Role</th><th>Dogs</th><th>Vaccine Status</th><th>Joined</th></tr></thead>
+    <tbody>${users.filter(u=>u.role!=='admin').map(u=>{
+      const ud=dogs.filter(d=>d.owner_id===u.id);
+      const hasExp=ud.some(d=>(d.vaccinations||[]).some(v=>new Date(v.expires_on)<today));
+      const hasWarn=ud.some(d=>(d.vaccinations||[]).some(v=>{const e=new Date(v.expires_on);return e>=today&&e<=wd;}));
+      return`<tr><td class="td-strong">${esc(u.first_name||'')} ${esc(u.last_name||'')}</td><td style="font-size:12px;color:var(--light);">${esc(u.id||u.email||'')}</td><td><span class="badge badge-ok">${u.role}</span></td><td>${ud.length}</td><td>${hasExp?'<span class="badge badge-err">Expired</span>':hasWarn?'<span class="badge badge-pending">Expiring</span>':'<span class="badge badge-confirmed">All current</span>'}</td><td>${fmtDate(u.created_at||'')}</td></tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+// ── CONFIG ──
+async function renderConfigAdmin(el){
+  el.innerHTML=`<div class="card"><div class="card-title">⚙️ Pricing & Alert Settings</div>
+    <div class="field-row">
+      <div class="field"><label>Overstay threshold (hours past 24-hr window)</label><input type="number" id="cfg-threshold" value="${pricingConfig.overstay_threshold_hrs}" step="0.5" min="0.5"><div class="field-hint">If checkout is more than this many hours late, an overstay charge applies.</div></div>
+      <div class="field"><label>Overstay charge (% of daily rate)</label><input type="number" id="cfg-pct" value="${pricingConfig.overstay_charge_pct}" step="5" min="0" max="200"><div class="field-hint">50 = half-day charge · 100 = full extra day</div></div>
+    </div>
+    <div class="field" style="max-width:300px;"><label>Vaccine warning threshold (days before expiry)</label><input type="number" id="cfg-warn" value="${pricingConfig.vacc_warning_days}" step="1" min="1"><div class="field-hint">Show "expiring soon" alert this many days before expiration.</div></div>
+    <button class="btn btn-primary" onclick="saveConfig()">Save Settings</button>
+  </div>`;
+}
+async function saveConfig(){
+  const data={overstay_threshold_hrs:parseFloat(document.getElementById('cfg-threshold').value),overstay_charge_pct:parseFloat(document.getElementById('cfg-pct').value),vacc_warning_days:parseInt(document.getElementById('cfg-warn').value),updated_at:new Date().toISOString()};
+  if(!DEMO){const {data:e}=await SB.from('pricing_config').select('id').limit(1).single();if(e)await SB.from('pricing_config').update(data).eq('id',e.id);else await SB.from('pricing_config').insert(data);}
+  pricingConfig={...pricingConfig,...data};toast('✅ Settings saved!');
+}
+
+// ════════════════════════════════════════════════════════════
+//  PROFILE PAGE
+// ════════════════════════════════════════════════════════════
+function renderProfilePage(){
+  const p=currentProfile,u=currentUser;
+  document.getElementById('profile-content').innerHTML=`<div class="card" style="max-width:480px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+      <div style="width:58px;height:58px;border-radius:50%;background:var(--forest);display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;font-weight:700;">${((p?.first_name||'?')[0]).toUpperCase()}</div>
+      <div><div style="font-size:18px;font-weight:600;">${esc(p?.first_name||'')} ${esc(p?.last_name||'')}</div><div style="font-size:13px;color:var(--mid);">${esc(u?.email||'')}</div><span class="badge ${p?.role==='admin'?'badge-info':'badge-ok'}" style="margin-top:4px;display:inline-block;">${p?.role==='admin'?'Administrator':'Member'}</span></div>
+    </div>
+    <div class="sep"></div>
+    <div class="field"><label>First Name</label><input type="text" id="prof-fn" value="${esc(p?.first_name||'')}"></div>
+    <div class="field"><label>Last Name</label><input type="text" id="prof-ln" value="${esc(p?.last_name||'')}"></div>
+    <div class="field"><label>Phone</label><input type="tel" id="prof-ph" value="${esc(p?.phone||'')}"></div>
+    <div class="alert alert-ok" id="prof-ok" style="display:none;">Profile updated!</div>
+    <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+  </div>`;
+}
+async function saveProfile(){
+  const fn=document.getElementById('prof-fn').value.trim(),ln=document.getElementById('prof-ln').value.trim(),ph=document.getElementById('prof-ph').value.trim();
+  if(!DEMO)await SB.from('profiles').update({first_name:fn,last_name:ln,phone:ph}).eq('id',currentUser.id);
+  currentProfile.first_name=fn;currentProfile.last_name=ln;updateNav();
+  document.getElementById('prof-ok').style.display='block';setTimeout(()=>document.getElementById('prof-ok').style.display='none',3000);toast('✅ Profile updated!');
+}
+
+// ════════════════════════════════════════════════════════════
+//  DEMO MODE
+// ════════════════════════════════════════════════════════════
+const DEMO_BREEDS=[{id:1,name:'Beagle'},{id:2,name:'Border Collie'},{id:3,name:'Boston Terrier'},{id:4,name:'Boxer'},{id:5,name:'Bulldog'},{id:6,name:'Chihuahua'},{id:7,name:'Dachshund'},{id:8,name:'Dalmatian'},{id:9,name:'French Bulldog'},{id:10,name:'German Shepherd'},{id:11,name:'Golden Retriever'},{id:12,name:'Great Dane'},{id:13,name:'Husky'},{id:14,name:'Labrador Retriever'},{id:15,name:'Maltese'},{id:16,name:'Poodle (Standard)'},{id:17,name:'Pug'},{id:18,name:'Rottweiler'},{id:19,name:'Shih Tzu'},{id:20,name:'Yorkshire Terrier'},{id:21,name:'Mixed Breed'},{id:22,name:'Other'}];
+let demoStore={};
+function initDemoData(){
+  const saved=localStorage.getItem('shvaan_demo_p2');
+  if(saved){demoStore=JSON.parse(saved);return;}
+  const did='dog-demo-1',uid='admin-demo',uid2='user-demo-1';
+  const today=new Date();
+  const futExp=new Date(today);futExp.setFullYear(futExp.getFullYear()+1);
+  const warnExp=new Date(today);warnExp.setDate(warnExp.getDate()+15);
+  const svc1='svc-1',svc2='svc-2';
+  demoStore={
+    users:[{id:uid,first_name:'Ajay',last_name:'Admin',role:'admin',phone:'(512)555-0100',created_at:new Date().toISOString()},{id:uid2,first_name:'Sarah',last_name:'Johnson',role:'user',phone:'(512)555-0199',created_at:new Date().toISOString()}],
+    dogs:[{id:did,owner_id:uid2,name:'Buddy',breed_id:11,breed_name:'Golden Retriever',size:'large',sex:'male',weight_lbs:65,neutered:true,color:'Golden',notes:'Loves fetch',active:true},
+          {id:'dog-demo-2',owner_id:uid2,name:'Mochi',breed_id:19,breed_name:'Shih Tzu',size:'small',sex:'female',weight_lbs:12,neutered:true,color:'White',notes:'Shy at first',active:true}],
+    vaccinations:[
+      {id:'v1',dog_id:did,vaccine_type:'Rabies',administered:'2024-06-01',expires_on:futExp.toISOString().split('T')[0]},
+      {id:'v2',dog_id:did,vaccine_type:'DHPP',administered:'2024-06-01',expires_on:warnExp.toISOString().split('T')[0]},
+      {id:'v3',dog_id:did,vaccine_type:'Bordetella',administered:'2024-06-01',expires_on:futExp.toISOString().split('T')[0]},
+      {id:'v4',dog_id:'dog-demo-2',vaccine_type:'Rabies',administered:'2025-01-01',expires_on:futExp.toISOString().split('T')[0]},
+      {id:'v5',dog_id:'dog-demo-2',vaccine_type:'DHPP',administered:'2025-01-01',expires_on:futExp.toISOString().split('T')[0]},
+      {id:'v6',dog_id:'dog-demo-2',vaccine_type:'Bordetella',administered:'2025-01-01',expires_on:futExp.toISOString().split('T')[0]},
+    ],
+    custom_fields:[],field_values:[],discounts:[],
+    services:[
+      {id:svc1,name:'Boarding',description:'Overnight boarding',unit:'night',active:true,sort_order:1,service_rates:[{dog_size:'small',rate:45},{dog_size:'medium',rate:55},{dog_size:'large',rate:65},{dog_size:'xlarge',rate:75}]},
+      {id:svc2,name:'Daycare',description:'Full day care',unit:'day',active:true,sort_order:2,service_rates:[{dog_size:'small',rate:25},{dog_size:'medium',rate:30},{dog_size:'large',rate:35},{dog_size:'xlarge',rate:40}]},
+    ],
+    reservations:[
+      {id:'res-demo-1',user_id:uid2,dog_id:did,service_id:svc1,status:'confirmed',requested_checkin:new Date(Date.now()+2*86400000).toISOString(),requested_checkout:new Date(Date.now()+5*86400000).toISOString(),base_rate:65,nights_or_days:3,overstay_charge:0,addons_total:0,subtotal:195,discount_amount:0,total_amount:195,special_notes:'Loves tennis balls',created_at:new Date().toISOString()},
+      {id:'res-demo-2',user_id:uid2,dog_id:'dog-demo-2',service_id:svc2,status:'pending',requested_checkin:new Date(Date.now()+7*86400000).toISOString(),requested_checkout:new Date(Date.now()+8*86400000).toISOString(),base_rate:25,nights_or_days:1,overstay_charge:0,addons_total:0,subtotal:25,discount_amount:0,total_amount:25,special_notes:'',created_at:new Date().toISOString()},
+    ],
+    blocked_dates:[
+      {date:new Date(Date.now()+30*86400000).toISOString().split('T')[0],reason:'Holiday'},
+      {date:new Date(Date.now()+31*86400000).toISOString().split('T')[0],reason:'Holiday'},
+    ]
+  };
+  saveDemoStore();
+}
+function saveDemoStore(){localStorage.setItem('shvaan_demo_p2',JSON.stringify(demoStore));}
+
+// ════════════════════════════════════════════════════════════
+//  UTILITIES
+// ════════════════════════════════════════════════════════════
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function setV(id,v){const el=document.getElementById(id);if(el)el.value=v;}
+function num(n){return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtDate(d){if(!d)return'—';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch{return d;}}
+function fmtDT(d){if(!d)return'—';try{return new Date(d).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});}catch{return d;}}
+function daysUntil(d){return Math.max(0,Math.round((new Date(d)-new Date())/86400000));}
+function timeOfDay(){const h=new Date().getHours();return h<12?'morning':h<17?'afternoon':'evening';}
+function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(type?' '+type:'');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);}
+function statusBadge(s){const m={pending:'badge-pending',confirmed:'badge-confirmed',rejected:'badge-rejected',cancelled:'badge-cancelled',checked_in:'badge-checked_in',completed:'badge-completed'};return`<span class="badge ${m[s]||''}">${(s||'').replace('_',' ')}</span>`;}
+function dragOver(e,id){e.preventDefault();document.getElementById(id)?.classList.add('drag');}
+function dragLeave(id){document.getElementById(id)?.classList.remove('drag');}
+function dropFile(e,inputId,areaId,displayId){e.preventDefault();dragLeave(areaId);const f=e.dataTransfer?.files[0];if(f){const inp=document.getElementById(inputId);const dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;fileChosen(inputId,displayId);}}
+function fileChosen(inputId,displayId){const f=document.getElementById(inputId)?.files[0];const d=document.getElementById(displayId);if(!d||!f)return;d.innerHTML=`<div class="file-chosen"><span>📄 ${esc(f.name)}</span><span style="color:var(--light);font-size:11px;margin-left:8px;">${(f.size/1024).toFixed(0)} KB</span><button onclick="clearFile('${inputId}','${displayId}')">✕</button></div>`;}
+function clearFile(inputId,displayId){document.getElementById(inputId).value='';document.getElementById(displayId).innerHTML='';}
+</script>
+</body>
+</html>
