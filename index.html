@@ -1181,6 +1181,13 @@ async function renderAdminDash(el){
     ${expired.map(v=>`<div class="expiry-item expired">❌ <div><strong>${esc(v.dog_name)}</strong> — ${esc(v.owner)}<br><span style="font-size:12px;">${v.vaccine_type} expired ${fmtDate(v.expires_on)}</span></div></div>`).join('')}
     ${expiring.map(v=>`<div class="expiry-item warning">⚠️ <div><strong>${esc(v.dog_name)}</strong> — ${esc(v.owner)}<br><span style="font-size:12px;">${v.vaccine_type} expires ${fmtDate(v.expires_on)}</span></div></div>`).join('')}
     </div>`:'<div class="card" style="color:var(--ok-txt);">✅ All vaccinations are current.</div>'}`;
+  // ── Phase 4: Capacity widget + agenda ──
+  try{
+    const cap=await getCapacityForDate(new Date());
+    const capColor=cap.pct>=90?'var(--red)':cap.pct>=70?'var(--amber)':'var(--green)';
+    el.insertAdjacentHTML('beforeend','<div class="card" style="margin-top:14px;"><div class="card-title" style="justify-content:space-between;">🏠 Today\'s Capacity <span style="font-size:13px;font-weight:400;color:var(--mid);">'+cap.count+'/'+cap.cap+' dogs</span></div><div class="cap-bar"><div class="cap-fill" style="width:'+cap.pct+'%;background:'+capColor+';"></div></div><div style="font-size:13px;color:var(--mid);margin-top:6px;">'+cap.available+' spot'+(cap.available!==1?'s':'')+' available today</div></div><div class="card" style="margin-top:14px;"><div class="card-title">📅 Upcoming — Next 30 Days</div><div id="adminAgendaBody">Loading…</div></div>');
+    await renderAgendaView(document.getElementById('adminAgendaBody'));
+  }catch(e){console.warn('Phase4 widgets:',e.message);}
 }
 async function renderUserDash(el){
   const dogs=await loadDogs();
@@ -1656,6 +1663,7 @@ async function openResModal(id){
       ${r.status==='completed'?`<button class="btn" style="background:var(--forest-p);color:var(--forest);" onclick="genInvoice('${r.id}').then(inv=>{if(inv)go('invoice-view',{id:inv.id||inv.invoice_number,back:'admin'});})">🧾 ${existInv?'View':'Generate'} Invoice</button>`:''}
       ${existInv?`<button class="btn btn-secondary btn-sm" onclick="go('invoice-view',{id:'${existInv.id}',back:'admin'});closeModal('resModal')">📄 ${esc(existInv.invoice_number)}</button>`:''}
       ${r.status==='confirmed'||r.status==='checked_in'?`<button class="btn btn-danger" onclick="updateRes('${r.id}','cancelled');closeModal('resModal')">Cancel</button>`:''}
+      <button class="btn btn-secondary btn-sm" onclick="openPhotosModal('${r.id}')">📷 Stay Photos</button>
     </div>`;
   document.getElementById('resModal').classList.add('open');
   recalcRes();
@@ -1794,12 +1802,16 @@ function renderAdminConfig(el){
       <div class="field"><label>Overstay threshold (hours past 24-hr window)</label><input type="number" id="cfg-t" value="${pricing.overstay_threshold_hrs}" step="0.5" min="0.5"><div class="field-hint">Pickup more than this many hours late triggers the overstay charge.</div></div>
       <div class="field"><label>Overstay charge (% of daily rate)</label><input type="number" id="cfg-p" value="${pricing.overstay_charge_pct}" step="5" min="0" max="200"><div class="field-hint">50 = half-day · 100 = full extra day</div></div>
     </div>
-    <div class="field" style="max-width:280px;"><label>Vaccine warning threshold (days before expiry)</label><input type="number" id="cfg-w" value="${pricing.vacc_warning_days}" step="1" min="1"></div>
+    <div class="field-row">
+      <div class="field" style="max-width:280px;"><label>Vaccine warning threshold (days before expiry)</label><input type="number" id="cfg-w" value="${pricing.vacc_warning_days}" step="1" min="1"></div>
+      <div class="field" style="max-width:280px;"><label>Total Capacity (spaces)</label><input type="number" id="cfg-cap" value="${pricing.capacity||10}" step="1" min="1"><div class="field-hint">Used for occupancy % and overbooking warnings.</div></div>
+    </div>
     <button class="btn btn-primary" onclick="saveConfig()">Save Settings</button>
   </div>`;
 }
 async function saveConfig(){
-  const data={overstay_threshold_hrs:parseFloat(V('cfg-t')),overstay_charge_pct:parseFloat(V('cfg-p')),vacc_warning_days:parseInt(V('cfg-w')),updated_at:new Date().toISOString()};
+  const capEl=document.getElementById('cfg-cap');
+  const data={overstay_threshold_hrs:parseFloat(V('cfg-t')),overstay_charge_pct:parseFloat(V('cfg-p')),vacc_warning_days:parseInt(V('cfg-w')),capacity:capEl?parseInt(capEl.value)||10:pricing.capacity||10,updated_at:new Date().toISOString()};
   if(!DEMO){const {data:e}=await SB.from('pricing_config').select('id').limit(1).single();if(e)await SB.from('pricing_config').update(data).eq('id',e.id);else await SB.from('pricing_config').insert(data);}
   Object.assign(pricing,data);toast('✅ Settings saved!');
 }
@@ -1989,6 +2001,9 @@ function initDemoData(){
       {id:'res-2',user_id:uid2,dog_id:d2,service_id:s2,status:'pending',requested_checkin:new Date(Date.now()+7*86400000).toISOString(),requested_checkout:new Date(Date.now()+8*86400000).toISOString(),base_rate:25,nights_or_days:1,overstay_charge:0,addons_total:0,subtotal:25,discount_amount:0,total_amount:25,special_notes:'',created_at:new Date().toISOString()},
     ],
   };
+  if(!DS.stay_photos)DS.stay_photos=[];
+  if(!DS.payments)DS.payments=[];
+  pricing.capacity=8;
   saveDS();
 }
 function saveDS(){localStorage.setItem('shvaan_demo_v3',JSON.stringify(DS));}
@@ -2255,72 +2270,13 @@ async function renderAgendaView(el){
   </div>`).join(''):'<div class="empty-state"><div class="ei">📅</div><p>No upcoming stays.</p></div>';
 }
 
-// ════════════════════════════════════════════════════════════
-//  PHASE 4 — PATCH ADMIN DASHBOARD WITH CAPACITY + AGENDA
-// ════════════════════════════════════════════════════════════
-const _p3AdminDash=renderAdminDash;
-async function renderAdminDash(el){
-  await _p3AdminDash(el);
-  // Capacity widget
-  const cap=await getCapacityForDate(new Date());
-  const capColor=cap.pct>=90?'var(--red)':cap.pct>=70?'var(--amber)':'var(--green)';
-  el.insertAdjacentHTML('beforeend',`<div class="card" style="margin-top:14px;">
-    <div class="card-title" style="justify-content:space-between;">🏠 Today's Capacity <span style="font-size:13px;font-weight:400;color:var(--mid);">${cap.count}/${cap.cap} dogs</span></div>
-    <div class="cap-bar"><div class="cap-fill" style="width:${cap.pct}%;background:${capColor};"></div></div>
-    <div style="font-size:13px;color:var(--mid);margin-top:6px;">${cap.available} spot${cap.available!==1?'s':''} available today${cap.pct>=90?' — <strong style="color:var(--red);">Near capacity!</strong>':''}</div>
-  </div>
-  <div class="card" style="margin-top:14px;"><div class="card-title" style="justify-content:space-between;">📅 Upcoming — Next 30 Days <button class="btn btn-secondary btn-sm no-print" onclick="adminTab_='reservations';renderAdmin()" style="font-size:12px;">View All</button></div>
-    <div id="adminAgendaBody">Loading…</div>
-  </div>`);
-  await renderAgendaView(document.getElementById('adminAgendaBody'));
-}
+// renderAdminDash capacity+agenda additions are built directly into the function above
 
-// ════════════════════════════════════════════════════════════
-//  PHASE 4 — PATCH CONFIG FOR CAPACITY
-// ════════════════════════════════════════════════════════════
-const _p3Config=renderAdminConfig;
-function renderAdminConfig(el){
-  _p3Config(el);
-  const card=el.querySelector('.card');
-  if(card){
-    const f=document.createElement('div');f.className='field';f.style.maxWidth='260px';
-    f.innerHTML=`<label>Total Capacity (spaces)</label><input type="number" id="cfg-cap" value="${pricing.capacity||10}" step="1" min="1"><div class="field-hint">Used for occupancy % and overbooking warnings.</div>`;
-    const btn=card.querySelector('button');if(btn)btn.before(f);
-  }
-}
-const _p3SaveConfig=saveConfig;
-async function saveConfig(){
-  const capEl=document.getElementById('cfg-cap');
-  if(capEl)pricing.capacity=parseInt(capEl.value)||10;
-  await _p3SaveConfig();
-  if(!DEMO&&SB){const {data:e}=await SB.from('pricing_config').select('id').limit(1).single();if(e)await SB.from('pricing_config').update({capacity:pricing.capacity}).eq('id',e.id);}
-}
+// Capacity field is built directly into renderAdminConfig and saveConfig above
 
-// ════════════════════════════════════════════════════════════
-//  PHASE 4 — PATCH RES MODAL WITH PHOTOS + PAYMENT BUTTONS
-// ════════════════════════════════════════════════════════════
-const _p3ResModal=openResModal;
-async function openResModal(id){
-  await _p3ResModal(id);
-  setTimeout(()=>{
-    const body=document.getElementById('resModalBody');if(!body)return;
-    const btns=body.querySelector('div:last-of-type');
-    if(btns){
-      const pb=document.createElement('button');pb.className='btn btn-secondary btn-sm';pb.innerHTML='📷 Stay Photos';pb.onclick=()=>openPhotosModal(id);
-      btns.appendChild(pb);
-    }
-  },150);
-}
+// Photos button added directly inside openResModal action buttons
 
-// ════════════════════════════════════════════════════════════
-//  PHASE 4 — DEMO DATA UPDATE
-// ════════════════════════════════════════════════════════════
-const _p3InitDemo=initDemoData;
-function initDemoData(){
-  _p3InitDemo();
-  if(!DS.stay_photos)DS.stay_photos=[];
-  pricing.capacity=8;
-}
+// stay_photos and capacity initialized directly in initDemoData above
 }
 </script>
 
