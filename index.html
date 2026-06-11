@@ -2014,9 +2014,7 @@ function enrichDemoRes(r){
   const disc=(DS.discounts||[]).filter(d=>d.reservation_id===r.id);
   return{...r,dogs:{name:dog.name,size:dog.size,breeds:{name:dog.breed_name},breed_other:dog.breed_other},profiles:{first_name:usr.first_name,last_name:usr.last_name,phone:usr.phone||''},services:{name:svc.name,unit:svc.unit},discounts:disc};
 }
-</script>
 
-<script>
 // ─── MOBILE DRAWER ───
 function openDrawer(){
   const d=document.getElementById('mobileDrawer');
@@ -2030,7 +2028,7 @@ function openDrawer(){
       const da=document.getElementById('drawerAdmin');
       if(dn)dn.textContent=(p.first_name||'')+' '+(p.last_name||'');
       if(dr)dr.textContent=p.role==='admin'?'Administrator':'Member';
-      if(da)da.innerHTML=p.role==='admin'?'<div class="drawer-link" onclick="go('admin');closeDrawer()">⚙️ Admin Panel</div>':'';
+      if(da)da.innerHTML=p.role==='admin'?'<div class="drawer-link" onclick="go(&quot;admin&quot;);closeDrawer()">⚙️ Admin Panel</div>':'';
     }
   }
 }
@@ -2277,7 +2275,6 @@ async function renderAgendaView(el){
 // Photos button added directly inside openResModal action buttons
 
 // stay_photos and capacity initialized directly in initDemoData above
-}
 </script>
 
 <!-- Supabase CDN loads LAST — onload calls autoBoot() -->
