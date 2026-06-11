@@ -1031,7 +1031,16 @@ async function doSignIn(){
   if(error){err.textContent=error.message;err.classList.add('show');return;}
   document.getElementById('authOverlay').classList.remove('open');
   currentUser=data.user;
-  await loadProfile();await loadGlobal();updateNav();go('dashboard');
+  console.log('[doSignIn] user:', currentUser?.email);
+  await loadProfile();
+  console.log('[doSignIn] profile:', JSON.stringify(profile));
+  await loadGlobal();
+  console.log('[doSignIn] globals loaded, breeds:', breeds.length, 'services:', services.length);
+  updateNav();
+  console.log('[doSignIn] calling go(dashboard)');
+  const appEl=document.getElementById('appScreen');
+  console.log('[doSignIn] appScreen display:', appEl?.style.display, 'computed:', window.getComputedStyle(appEl)?.display);
+  go('dashboard');
 }
 async function doRegister(){
   const fn=V('r-fn'),em=V('r-em'),pw=V('r-pw');
