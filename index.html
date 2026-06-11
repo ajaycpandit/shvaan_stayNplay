@@ -603,16 +603,50 @@ const VACC_TYPES = ['Rabies','DHPP','Bordetella'];
 //  SETUP & AUTH
 // ════════════════════════════════════════════════════════════
 async function connectSupabase(){
-  const url=document.getElementById('sb-url').value.trim(), key=document.getElementById('sb-key').value.trim();
-  const err=document.getElementById('setup-err');
-  if(!url||!key){showSetupErr('Enter both URL and anon key.');return;}
+  const url=document.getElementById('sb-url').value.trim();
+  const key=document.getElementById('sb-key').value.trim();
+  const errEl=document.getElementById('setup-err');
+  const btn=event?.target;
+  errEl.classList.remove('show');
+
+  if(!url){showSetupErr('Please enter your Supabase Project URL.');return;}
+  if(!key){showSetupErr('Please enter your Supabase Anon Key.');return;}
+  if(!url.startsWith('https://')){showSetupErr('URL must start with https://');return;}
+
+  // Show loading state
+  if(btn){btn.textContent='Connecting…';btn.disabled=true;}
+
   try{
-    SB=supabase.createClient(url,key);
-    const {error}=await SB.auth.getSession();
-    if(error)throw error;
-    localStorage.setItem('sb_url',url);localStorage.setItem('sb_key',key);
+    SB = supabase.createClient(url, key, {
+      auth: { persistSession: true, autoRefreshToken: true }
+    });
+
+    // Test the connection with a lightweight call
+    const {error} = await SB.from('profiles').select('id').limit(1);
+    // A "no rows" result is fine — it means the DB is reachable
+    // Only throw if there's a real connection error (not a "0 rows" result)
+    if(error && error.code !== 'PGRST116' && !error.message?.includes('0 rows')){
+      // Try auth as a fallback test
+      const {error:authErr} = await SB.auth.getSession();
+      if(authErr) throw authErr;
+    }
+
+    localStorage.setItem('sb_url', url);
+    localStorage.setItem('sb_key', key);
+    if(btn){btn.textContent='Connect & Launch';btn.disabled=false;}
     await launchApp();
-  }catch(e){showSetupErr('Connection failed: '+(e.message||'Check your credentials'));}
+
+  }catch(e){
+    if(btn){btn.textContent='Connect & Launch';btn.disabled=false;}
+    const msg = e.message||'';
+    if(msg.includes('Failed to fetch')||msg.includes('NetworkError')){
+      showSetupErr('Cannot reach Supabase. Check your Project URL and internet connection.');
+    } else if(msg.includes('Invalid API key')||msg.includes('apikey')){
+      showSetupErr('Invalid Anon Key. Copy it from Supabase → Settings → API.');
+    } else {
+      showSetupErr('Connection error: '+msg);
+    }
+  }
 }
 function showSetupErr(msg){const el=document.getElementById('setup-err');el.textContent=msg;el.classList.add('show');}
 function useDemoMode(){DEMO=true;localStorage.setItem('demo_mode','1');initDemoData();launchApp();}
@@ -632,14 +666,23 @@ async function launchApp(){
     await loadGlobalData();updateNav();navigate('dashboard');return;
   }
   // Check for an existing session on page load
-  const {data:{session}}=await SB.auth.getSession();
+  let session = null;
+  try {
+    const {data, error} = await SB.auth.getSession();
+    if(error) throw error;
+    session = data?.session;
+  } catch(e) {
+    console.warn('getSession error:', e.message);
+  }
   if(session?.user){
-    currentUser=session.user;
+    currentUser = session.user;
     await loadProfile();
     await loadGlobalData();
+    await loadBusinessInfo();
     updateNav();
     navigate('dashboard');
   } else {
+    // No active session — show the sign-in modal
     showAuthModal();
   }
 }
@@ -713,9 +756,9 @@ async function doSignIn(){
   currentUser=data.user;
   await loadProfile();
   await loadGlobalData();
+  await loadBusinessInfo();
   updateNav();
   navigate('dashboard');
-  // Show debug bar so we can verify role loaded correctly
   runDebug();
 }
 async function doRegister(){
@@ -2284,13 +2327,6 @@ async function previewInvoiceDemo(){
   }
 }
 
-// ── ADD INVOICE BUTTON TO RES DETAIL MODAL ──
-// Patch saveResModal to show invoice button after save on completed reservations
-const _origSaveResModal=saveResModal;
-async function saveResModal(id){
-  await _origSaveResModal(id);
-}
-
 // ── PATCH checkoutReservation TO ALSO UPDATE MODAL BUTTON ──
 // Add "Generate Invoice" button in resModal for completed reservations
 async function openResModal(id){
@@ -2410,12 +2446,7 @@ async function renderMyReservations(){
   </table></div>`;
 }
 
-// ── LOAD BUSINESS INFO ON APP START ──
-const _origLoadGlobalData=loadGlobalData;
-async function loadGlobalData(){
-  await _origLoadGlobalData();
-  await loadBusinessInfo();
-}
+// Business info is loaded directly in launchApp — no patching needed
 
 </script>
 </body>
