@@ -335,7 +335,7 @@ tr:hover td{background:var(--cream);}
     <div class="field"><label>Supabase Project URL</label><input type="url" id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co"></div>
     <div class="field"><label>Supabase Anon Public Key</label><input type="text" id="sb-key" placeholder="eyJhbGciOi..."></div>
     <div class="alert alert-err" id="setup-err"></div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;border-radius:12px;" onclick="connectSupabase()">Connect & Launch</button>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;border-radius:12px;" id="connectBtn" onclick="connectSupabase(this)">Connect & Launch</button>
     <div style="margin-top:10px;text-align:center;">
       <a href="#" style="font-size:12px;color:var(--light);" onclick="useDemoMode()">Try demo mode (no Supabase needed)</a>
     </div>
@@ -602,59 +602,64 @@ const VACC_TYPES = ['Rabies','DHPP','Bordetella'];
 // ════════════════════════════════════════════════════════════
 //  SETUP & AUTH
 // ════════════════════════════════════════════════════════════
-async function connectSupabase(){
+async function connectSupabase(btn){
   const url=document.getElementById('sb-url').value.trim();
   const key=document.getElementById('sb-key').value.trim();
-  const errEl=document.getElementById('setup-err');
-  const btn=event?.target;
-  errEl.classList.remove('show');
+  showSetupErr('');
 
   if(!url){showSetupErr('Please enter your Supabase Project URL.');return;}
   if(!key){showSetupErr('Please enter your Supabase Anon Key.');return;}
   if(!url.startsWith('https://')){showSetupErr('URL must start with https://');return;}
 
-  // Show loading state
+  // Show loading state on button
   if(btn){btn.textContent='Connecting…';btn.disabled=true;}
 
   try{
+    // Create client
     SB = supabase.createClient(url, key, {
-      auth: { persistSession: true, autoRefreshToken: true }
+      auth:{ persistSession:true, autoRefreshToken:true, storageKey:'shvaan-auth' }
     });
 
-    // Test the connection with a lightweight call
-    const {error} = await SB.from('profiles').select('id').limit(1);
-    // A "no rows" result is fine — it means the DB is reachable
-    // Only throw if there's a real connection error (not a "0 rows" result)
-    if(error && error.code !== 'PGRST116' && !error.message?.includes('0 rows')){
-      // Try auth as a fallback test
-      const {error:authErr} = await SB.auth.getSession();
-      if(authErr) throw authErr;
-    }
+    // Use auth.getSession() as the connection test — works regardless of RLS
+    const {data, error} = await SB.auth.getSession();
+    if(error) throw error;
 
+    // Connection confirmed — save credentials
     localStorage.setItem('sb_url', url);
     localStorage.setItem('sb_key', key);
     if(btn){btn.textContent='Connect & Launch';btn.disabled=false;}
+
+    // Boot the app
     await launchApp();
 
   }catch(e){
     if(btn){btn.textContent='Connect & Launch';btn.disabled=false;}
     const msg = e.message||'';
-    if(msg.includes('Failed to fetch')||msg.includes('NetworkError')){
-      showSetupErr('Cannot reach Supabase. Check your Project URL and internet connection.');
-    } else if(msg.includes('Invalid API key')||msg.includes('apikey')){
-      showSetupErr('Invalid Anon Key. Copy it from Supabase → Settings → API.');
+    console.error('connectSupabase error:', msg);
+    if(msg.includes('Failed to fetch')||msg.includes('NetworkError')||msg.includes('ERR_NAME')){
+      showSetupErr('Cannot reach Supabase — check your Project URL and internet connection.');
+    } else if(msg.toLowerCase().includes('invalid')||msg.includes('apikey')||msg.includes('401')){
+      showSetupErr('Invalid Anon Key — copy it from Supabase → Settings → API.');
+    } else if(msg){
+      showSetupErr('Error: '+msg);
     } else {
-      showSetupErr('Connection error: '+msg);
+      showSetupErr('Connection failed — check your URL and Anon Key and try again.');
     }
   }
 }
-function showSetupErr(msg){const el=document.getElementById('setup-err');el.textContent=msg;el.classList.add('show');}
+function showSetupErr(msg){const el=document.getElementById('setup-err');el.textContent=msg;if(msg)el.classList.add('show');else el.classList.remove('show');}
 function useDemoMode(){DEMO=true;localStorage.setItem('demo_mode','1');initDemoData();launchApp();}
 
 window.addEventListener('load',async()=>{
   if(localStorage.getItem('demo_mode')==='1'){DEMO=true;initDemoData();await launchApp();return;}
-  const url=localStorage.getItem('sb_url'),key=localStorage.getItem('sb_key');
-  if(url&&key){SB=supabase.createClient(url,key);await launchApp();}
+  const url=localStorage.getItem('sb_url'), key=localStorage.getItem('sb_key');
+  if(url&&key){
+    SB=supabase.createClient(url,key,{
+      auth:{persistSession:true,autoRefreshToken:true,storageKey:'shvaan-auth'}
+    });
+    await launchApp();
+  }
+  // else: stay on setup screen — credentials not yet saved
 });
 
 async function launchApp(){
