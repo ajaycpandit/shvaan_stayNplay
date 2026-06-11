@@ -1149,6 +1149,15 @@ function go(page,params={}){
     console.error('[go] No page element found for: page-'+page);
     return;
   }
+  // highlight bottom nav
+  const navMap={dashboard:0,dogs:1,book:2,'my-res':3};
+  document.querySelectorAll('.bnav-item').forEach((bn,i)=>{
+    bn.classList.toggle('active',i===navMap[page]);
+  });
+  // update drawer admin link
+  const da=document.getElementById('drawerAdmin');
+  if(da&&profile)da.innerHTML=profile.role==='admin'
+    ?'<div class="drawer-link" onclick="go(&quot;admin&quot;);closeDrawer()">⚙️ Admin Panel</div>':'';
   const pages={
     dashboard:renderDashboard,dogs:renderDogs,'dog-detail':()=>renderDogDetail(params.id),
     book:renderBook,'my-res':renderMyRes,invoices:renderInvoices,
@@ -2076,18 +2085,7 @@ function closeDrawer(){
 // Close drawer on back button
 window.addEventListener('popstate',closeDrawer);
 // Update bottom nav active state
-const _origGo=go;
-function go(page,params={}){
-  _origGo(page,params);
-  // highlight active bottom nav item
-  const map={dashboard:0,dogs:1,book:2,'my-res':3};
-  document.querySelectorAll('.bnav-item').forEach((el,i)=>{
-    el.classList.toggle('active',i===map[page]);
-  });
-  // update drawer admin link visibility
-  const da=document.getElementById('drawerAdmin');
-  if(da&&profile)da.innerHTML=profile.role==='admin'?`<div class="drawer-link" onclick="go('admin');closeDrawer()">⚙️ Admin Panel</div>`:'';
-}
+// mobile nav highlight + drawer update handled directly in go() above
 
 
 // ════════════════════════════════════════════════════════════
