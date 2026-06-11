@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Shvaan Stay & Play — Phase 3</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 :root{
   --cream:#F9F5EF;--warm:#FEFCF8;--forest:#2C4A3E;--forest-l:#3D6355;
@@ -611,8 +611,8 @@ function useDemoMode(){DEMO=true;localStorage.setItem('demo_mode','1');initDemoD
 // ════════════════════════════════════════════════════════
 //  CREDENTIALS — fill these in to skip the setup screen
 // ════════════════════════════════════════════════════════
-const SUPABASE_URL = 'https://ovaovtbqprdwzznfqqfu.supabase.co';  // paste your project URL here
-const SUPABASE_KEY = 'sb_publishable__tdW73E-2bL2SYhYqlATrw_y9nEUjn-';  // paste your anon key here
+const SUPABASE_URL = '';  // paste your project URL here
+const SUPABASE_KEY = '';  // paste your anon key here
 // ════════════════════════════════════════════════════════
 
 // Single entry point — called on page load AND by the Connect button
@@ -683,8 +683,8 @@ function connectSupabase(btn){
   startApp(url, key, btn);
 }
 
-// Auto-boot on page load
-document.addEventListener('DOMContentLoaded', () => startApp());
+// Auto-boot — called directly once this script block finishes parsing
+// No event listeners needed — the script is at the bottom of <body>
 
 async function launchApp(){
   const setupEl = document.getElementById('setup');
@@ -2485,6 +2485,19 @@ async function renderMyReservations(){
 
 // Business info is loaded directly in launchApp — no patching needed
 
+// Boot guard — prevents startApp running twice if CDN was cached
+let _appStarted = false;
+const _startOnce = () => { if(!_appStarted){ _appStarted=true; startApp(); } };
+// If Supabase already loaded (cached), run now
+if(typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') _startOnce();
+</script>
+
+<!-- Load Supabase AFTER all app code is defined -->
+<!-- onload fires startApp() once the library is ready -->
+<script 
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  onload="_startOnce();"
+  onerror="showSetupErr('Supabase library failed to load — check your internet connection and reload the page.');">
 </script>
 </body>
 </html>
