@@ -299,6 +299,44 @@ tr:hover td{background:var(--cream);}
   .page{display:block!important;padding:0!important;}
   .invoice-wrap{border:none;max-width:100%;}
 }
+/* ── PHASE 4 STYLES ── */
+/* Finance chart */
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:6px;height:160px;padding:0 4px;}
+.chart-bar-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px;}
+.chart-bar{width:100%;background:var(--forest);border-radius:4px 4px 0 0;transition:height .4s ease;min-height:2px;cursor:pointer;position:relative;}
+.chart-bar:hover{background:var(--forest-l);}
+.chart-bar-label{font-size:10px;color:var(--light);text-align:center;white-space:nowrap;}
+.chart-bar-val{font-size:10px;color:var(--forest);font-weight:600;}
+/* Capacity bar */
+.cap-bar{height:10px;background:var(--border);border-radius:100px;overflow:hidden;margin-top:6px;}
+.cap-fill{height:100%;border-radius:100px;transition:width .4s;}
+/* stay photos grid */
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:10px;}
+.photo-thumb{aspect-ratio:1;border-radius:8px;object-fit:cover;cursor:pointer;border:1px solid var(--border);}
+.photo-thumb:hover{opacity:.85;}
+/* payment badge */
+.pay-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:700;}
+.pay-badge.paid{background:var(--ok-bg);color:var(--ok-txt);}
+.pay-badge.unpaid{background:var(--warn-bg);color:var(--warn-txt);}
+/* team/staff table */
+.perm-toggle{display:flex;align-items:center;gap:6px;padding:4px 0;}
+.perm-toggle label{font-size:13px;color:var(--dark);cursor:pointer;}
+.toggle-sw{position:relative;width:36px;height:20px;flex-shrink:0;}
+.toggle-sw input{opacity:0;width:0;height:0;}
+.toggle-sw .slider{position:absolute;inset:0;background:var(--border);border-radius:100px;transition:.3s;cursor:pointer;}
+.toggle-sw .slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+.toggle-sw input:checked+.slider{background:var(--forest);}
+.toggle-sw input:checked+.slider:before{transform:translateX(16px);}
+/* agenda calendar */
+.agenda-day{border-radius:12px;overflow:hidden;margin-bottom:10px;border:1px solid var(--border);}
+.agenda-day-header{padding:8px 14px;background:var(--forest-p);font-size:13px;font-weight:600;color:var(--forest);}
+.agenda-event{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px;}
+.agenda-event:last-child{border-bottom:none;}
+.agenda-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+/* behaviour chips */
+.beh-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* custom rate indicator */
+.custom-rate-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:var(--amber-l);color:var(--clay);}
 </style>
 </head>
 <body>
@@ -310,7 +348,7 @@ tr:hover td{background:var(--cream);}
       <div class="setup-logo-icon">🐾</div>
       <strong>Shvaan Stay & Play</strong>
     </div>
-    <span class="setup-badge">✦ Phase 3</span>
+    <span class="setup-badge">✦ Phase 4</span>
     <h2>Connect to Supabase</h2>
     <p>Enter your Supabase credentials from <strong>Settings → API</strong>.</p>
     <div class="setup-steps">
@@ -349,6 +387,7 @@ tr:hover td{background:var(--cream);}
       <span class="nav-link" onclick="go('book')">Book a Stay</span>
       <span class="nav-link" onclick="go('my-res')">My Reservations</span>
       <span class="nav-link" onclick="go('invoices')">Invoices</span>
+      <span class="nav-link" onclick="go('finance')">Finance</span>
       <span id="navAdmin"></span>
       <div class="nav-pill" onclick="go('profile')">
         <div class="av" id="navAv">?</div>
@@ -381,6 +420,7 @@ tr:hover td{background:var(--cream);}
       <div class="drawer-link" onclick="go('book');closeDrawer()">📅 Book a Stay</div>
       <div class="drawer-link" onclick="go('my-res');closeDrawer()">📋 My Reservations</div>
       <div class="drawer-link" onclick="go('invoices');closeDrawer()">🧾 Invoices</div>
+      <div class="drawer-link" onclick="go('finance');closeDrawer()">💰 Finance</div>
       <div id="drawerAdmin"></div>
       <div class="drawer-divider"></div>
       <div class="drawer-link" onclick="go('profile');closeDrawer()">👤 My Profile</div>
@@ -407,6 +447,8 @@ tr:hover td{background:var(--cream);}
   <div class="page" id="page-invoices"></div>
   <div class="page" id="page-invoice-view"></div>
   <div class="page" id="page-admin"></div>
+  <div class="page" id="page-finance"></div>
+  <div class="page" id="page-team"></div>
   <div class="page" id="page-profile"></div>
 </div>
 
@@ -464,6 +506,16 @@ tr:hover td{background:var(--cream);}
     </div>
     <div class="field"><label>Neutered/Spayed?</label><select id="d-neutered"><option value="false">No</option><option value="true">Yes</option></select></div>
     <div class="field"><label>Notes</label><textarea id="d-notes" placeholder="Temperament, needs…"></textarea></div>
+    <div class="field"><label>Custom Rate ($/night) — overrides default</label><input type="number" id="d-custom-rate" placeholder="Leave blank to use default" min="0" step="0.01"></div>
+    <!-- Behaviour -->
+    <div class="sep"></div><div class="stag">🐾 Behaviour & Habits</div>
+    <div class="beh-grid">
+      <div class="field"><label>Temperament</label><select id="d-temperament"><option value="">—</option><option>Calm</option><option>Friendly</option><option>Shy</option><option>Anxious</option><option>Reactive</option></select></div>
+      <div class="field"><label>Gets along w/ other dogs</label><select id="d-other-dogs"><option value="">—</option><option>Yes</option><option>Selective</option><option>No</option><option>Unknown</option></select></div>
+      <div class="field"><label>Energy Level</label><select id="d-energy"><option value="">—</option><option>Low</option><option>Moderate</option><option>High</option></select></div>
+      <div class="field"><label>Eating Habits</label><select id="d-eating"><option value="">—</option><option>Good eater</option><option>Picky</option><option>Needs encouragement</option><option>Special diet</option></select></div>
+    </div>
+    <div class="field"><label>Handling Notes</label><textarea id="d-handling" placeholder="Leash behavior, medication, special instructions…" style="min-height:60px;"></textarea></div>
     <div id="d-custom-fields"></div>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn btn-primary" onclick="saveDog()" id="saveDogBtn">Save Dog</button>
@@ -527,6 +579,41 @@ tr:hover td{background:var(--cream);}
   </div>
 </div>
 
+<!-- PAYMENT MODAL -->
+<div class="overlay" id="payModal">
+  <div class="modal" style="max-width:400px;">
+    <button class="modal-close" onclick="closeModal('payModal')">✕</button>
+    <h3>Record Payment</h3>
+    <input type="hidden" id="pay-res-id">
+    <div class="field"><label>Payment Method</label>
+      <select id="pay-method"><option value="cash">Cash</option><option value="card">Card</option><option value="venmo">Venmo / Zelle</option><option value="other">Other</option></select>
+    </div>
+    <div class="field"><label>Amount Paid ($)</label><input type="number" id="pay-amount" min="0" step="0.01" placeholder="Full amount or partial"></div>
+    <div class="field"><label>Date Received</label><input type="date" id="pay-date"></div>
+    <div class="field"><label>Notes</label><input type="text" id="pay-notes" placeholder="e.g. Deposit, balance remaining…"></div>
+    <div class="alert alert-err" id="pay-err"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="savePayment()">Record Payment</button>
+      <button class="btn btn-secondary" onclick="closeModal('payModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- STAY PHOTOS MODAL -->
+<div class="overlay" id="photosModal">
+  <div class="modal" style="max-width:560px;">
+    <button class="modal-close" onclick="closeModal('photosModal')">✕</button>
+    <h3>Stay Photos</h3>
+    <input type="hidden" id="photos-res-id">
+    <div class="field">
+      <label>Add Photos</label>
+      <input type="file" id="photos-input" accept="image/*" multiple style="padding:8px;background:var(--cream);border:1.5px solid var(--border);border-radius:10px;width:100%;">
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="uploadStayPhotos()" id="uploadPhotosBtn">Upload</button>
+    <div id="photos-grid" style="margin-top:14px;"></div>
+  </div>
+</div>
+
 <!-- CUSTOM FIELD MODAL -->
 <div class="overlay" id="cfModal">
   <div class="modal" style="max-width:440px;">
@@ -581,9 +668,10 @@ tr:hover td{background:var(--cream);}
 // ─── GLOBALS ───
 let SB = null, DEMO = false;
 let currentUser = null, profile = null;
-let breeds = [], customFields = [], services = [], pricing = {overstay_threshold_hrs:3,overstay_charge_pct:50,vacc_warning_days:30};
+let breeds = [], customFields = [], services = [], pricing = {overstay_threshold_hrs:3,overstay_charge_pct:50,vacc_warning_days:30,capacity:10};
 let blockedDates = new Set();
 let editDogId = null;
+let teamMembers = []; // staff/customer accounts
 let bizInfo = {name:'Shvaan Stay & Play',tagline:'Premium Dog Boarding',address:'2847 South Lamar Blvd, Austin, TX 78704',phone:'(512) 555-0100',email:'hello@shvaanstay.com',website:'www.shvaanstay.com',logo_emoji:'🐾',invoice_note:'Thank you! Payment due within 7 days.',tax_id:''};
 const SZ = {small:'Small',medium:'Medium',large:'Large',xlarge:'XL'};
 const VACCS = ['Rabies','DHPP','Bordetella'];
@@ -811,7 +899,7 @@ function go(page,params={}){
     dashboard:renderDashboard,dogs:renderDogs,'dog-detail':()=>renderDogDetail(params.id),
     book:renderBook,'my-res':renderMyRes,invoices:renderInvoices,
     'invoice-view':()=>renderInvoiceView(params.id,params.back),
-    admin:renderAdmin,profile:renderProfile
+    admin:renderAdmin,finance:renderFinance,team:renderTeam,profile:renderProfile
   };
   if(pages[page])pages[page]();
 }
@@ -968,6 +1056,12 @@ async function renderDogDetail(dogId){
     </div>
     ${customFields.length?`<div class="card" style="margin-top:14px;"><div class="card-title">📋 Additional Info</div>
       ${customFields.map(f=>`<div class="profile-row"><span>${esc(f.label)}</span><span>${esc(cfVals[f.id]||'—')}</span></div>`).join('')}
+    </div>`:''}
+    ${(dog.temperament||dog.energy_level||dog.other_dogs||dog.eating_habits||dog.handling_notes)?`<div class="card" style="margin-top:14px;"><div class="card-title">🐾 Behaviour & Habits</div>
+      ${[['Temperament',dog.temperament],['Gets along w/ other dogs',dog.other_dogs],['Energy Level',dog.energy_level],['Eating Habits',dog.eating_habits],dog.handling_notes?['Handling Notes',dog.handling_notes]:null].filter(Boolean).map(([l,v])=>`<div class="profile-row"><span>${l}</span><span>${esc(v||'—')}</span></div>`).join('')}
+    </div>`:''}
+    ${dog.custom_rate?`<div class="card" style="margin-top:14px;background:var(--amber-p);"><div class="card-title">💰 Custom Rate</div>
+      <div style="font-size:15px;">This dog has a custom rate of <strong style="color:var(--forest);">$${num(dog.custom_rate)}/night</strong> instead of the default.</div>
     </div>`:''}`;
 }
 
@@ -982,6 +1076,10 @@ async function openDogModal(dogId=null){
       setV('d-name',d.name);setV('d-sex',d.sex||'unknown');setV('d-size',d.size);
       setV('d-weight',d.weight_lbs||'');setV('d-dob',d.dob||'');setV('d-color',d.color||'');
       setV('d-neutered',d.neutered?'true':'false');setV('d-notes',d.notes||'');
+      setV('d-custom-rate',d.custom_rate||'');
+      setV('d-temperament',d.temperament||'');setV('d-other-dogs',d.other_dogs||'');
+      setV('d-energy',d.energy_level||'');setV('d-eating',d.eating_habits||'');
+      setV('d-handling',d.handling_notes||'');
       document.getElementById('d-breed-txt').value=d.breed_name||d.breed_other||'';
       document.getElementById('d-breed-id').value=d.breed_id||'';
       let cfv={};
@@ -990,7 +1088,7 @@ async function openDogModal(dogId=null){
       renderCFInputs(cfv);
     }
   }else{
-    ['d-name','d-weight','d-dob','d-color','d-notes'].forEach(id=>setV(id,''));
+    ['d-name','d-weight','d-dob','d-color','d-notes','d-custom-rate','d-temperament','d-other-dogs','d-energy','d-eating','d-handling'].forEach(id=>setV(id,''));
     setV('d-sex','unknown');setV('d-size','medium');setV('d-neutered','false');
     document.getElementById('d-breed-txt').value='';document.getElementById('d-breed-id').value='';
     renderCFInputs();
@@ -1019,7 +1117,12 @@ async function saveDog(){
   if(!breedTxt){err.textContent='Please select a breed.';err.classList.add('show');return;}
   for(const f of customFields.filter(x=>x.required)){if(!V('cf-v-'+f.id)){err.textContent=`"${f.label}" is required.`;err.classList.add('show');return;}}
   btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
-  const data={name,size:V('d-size'),breed_id:breedId?parseInt(breedId):null,breed_other:breedId?null:breedTxt,sex:V('d-sex'),weight_lbs:V('d-weight')||null,dob:V('d-dob')||null,color:V('d-color')||null,neutered:V('d-neutered')==='true',notes:V('d-notes')||null,updated_at:new Date().toISOString()};
+  const data={name,size:V('d-size'),breed_id:breedId?parseInt(breedId):null,breed_other:breedId?null:breedTxt,sex:V('d-sex'),weight_lbs:V('d-weight')||null,dob:V('d-dob')||null,color:V('d-color')||null,neutered:V('d-neutered')==='true',notes:V('d-notes')||null,
+    custom_rate:V('d-custom-rate')?parseFloat(V('d-custom-rate')):null,
+    temperament:V('d-temperament')||null,other_dogs:V('d-other-dogs')||null,
+    energy_level:V('d-energy')||null,eating_habits:V('d-eating')||null,
+    handling_notes:V('d-handling')||null,
+    updated_at:new Date().toISOString()};
   let savedId=editDogId;
   if(!DEMO){
     if(editDogId){await SB.from('dogs').update(data).eq('id',editDogId);}
@@ -1228,6 +1331,7 @@ function renderAdmin(){
     <div class="admin-tab ${adminTab_==='clients'?'active':''}" onclick="setAdminTab('clients',this)">Clients</div>
     <div class="admin-tab ${adminTab_==='config'?'active':''}" onclick="setAdminTab('config',this)">Settings</div>
     <div class="admin-tab ${adminTab_==='biz'?'active':''}" onclick="setAdminTab('biz',this)">Business Info</div>
+    <div class="admin-tab ${adminTab_==='team'?'active':''}" onclick="setAdminTab('team',this)">Team & Access</div>
   </div>
   <div id="adminBody"></div>`;
   renderAdminContent();
@@ -1242,6 +1346,7 @@ async function renderAdminContent(){
   else if(adminTab_==='clients')await renderAdminClients(el);
   else if(adminTab_==='config')renderAdminConfig(el);
   else if(adminTab_==='biz')renderBizAdmin(el);
+  else if(adminTab_==='team')await renderTeamAdmin(el);
 }
 async function renderAdminRes(el){
   let res=[];
@@ -1705,6 +1810,290 @@ function go(page,params={}){
   // update drawer admin link visibility
   const da=document.getElementById('drawerAdmin');
   if(da&&profile)da.innerHTML=profile.role==='admin'?'<div class="drawer-link" onclick="go('admin');closeDrawer()">⚙️ Admin Panel</div>':'';
+
+
+// ════════════════════════════════════════════════════════════
+//  PHASE 4 — FINANCE
+// ════════════════════════════════════════════════════════════
+async function renderFinance(){
+  const el=document.getElementById('page-finance');
+  el.innerHTML='<div class="page-header"><h2>Finance</h2><p>Income from completed reservations.</p></div>Loading…';
+  let res=[];
+  if(!DEMO){
+    const {data}=await SB.from('reservations').select('*,dogs(name),services(name),invoices(id,status,invoice_number,payment_method,payment_date)').eq('status','completed').order('actual_checkout',{ascending:false});
+    res=data||[];
+  }else{
+    res=(DS.reservations||[]).filter(r=>r.status==='completed').map(r=>({...r,
+      dogs:{name:(DS.dogs||[]).find(d=>d.id===r.dog_id)?.name||'?'},
+      services:{name:(DS.services||[]).find(s=>s.id===r.service_id)?.name||'?'},
+      invoices:(DS.invoices||[]).filter(i=>i.reservation_id===r.id)
+    }));
+  }
+  const byMonth={};
+  res.forEach(r=>{
+    const d=new Date(r.actual_checkout||r.requested_checkout);
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    if(!byMonth[key])byMonth[key]={label:d.toLocaleDateString('en-US',{month:'short',year:'numeric'}),total:0,count:0};
+    byMonth[key].total+=parseFloat(r.total_amount||0);
+    byMonth[key].count++;
+  });
+  const months=Object.entries(byMonth).sort(([a],[b])=>a.localeCompare(b)).slice(-6);
+  const maxVal=Math.max(...months.map(([,v])=>v.total),1);
+  const totalIncome=res.reduce((s,r)=>s+parseFloat(r.total_amount||0),0);
+  const paid=res.filter(r=>r.invoices?.some(i=>i.status==='paid'));
+  const totalPaid=paid.reduce((s,r)=>s+parseFloat(r.total_amount||0),0);
+  el.innerHTML=`<div class="page-header"><h2>Finance</h2><p>Income from completed reservations.</p></div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="sn">$${num(totalIncome)}</div><div class="sl">Total Revenue</div></div>
+      <div class="stat-card"><div class="sn" style="color:var(--green)">$${num(totalPaid)}</div><div class="sl">Collected</div></div>
+      <div class="stat-card"><div class="sn" style="color:var(--amber)">$${num(totalIncome-totalPaid)}</div><div class="sl">Outstanding</div></div>
+      <div class="stat-card"><div class="sn">${res.length}</div><div class="sl">Completed Stays</div></div>
+    </div>
+    ${months.length?`<div class="card"><div class="card-title">📊 Revenue — Last 6 Months</div>
+      <div class="chart-bar-wrap">${months.map(([,v])=>`<div class="chart-bar-col">
+        <div class="chart-bar-val">$${v.total>=1000?(v.total/1000).toFixed(1)+'k':Math.round(v.total)}</div>
+        <div class="chart-bar" style="height:${Math.round((v.total/maxVal)*120)+8}px"></div>
+        <div class="chart-bar-label">${v.label}</div>
+      </div>`).join('')}</div></div>`:''}
+    <div class="card"><div class="card-title">📋 All Completed Stays</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Dog</th><th>Service</th><th>Checkout</th><th>Total</th><th>Invoice</th><th>Payment</th><th></th></tr></thead><tbody>
+      ${res.map(r=>{const inv=r.invoices?.[0];const isPaid=inv?.status==='paid';return`<tr>
+        <td class="td-strong">🐾 ${esc(r.dogs?.name||'?')}</td><td>${esc(r.services?.name||'?')}</td>
+        <td>${fmtDate(r.actual_checkout||r.requested_checkout)}</td>
+        <td><strong>$${num(r.total_amount||0)}</strong></td>
+        <td>${inv?`<button class="btn btn-xs btn-secondary" onclick="go('invoice-view',{id:'${inv.id}',back:'finance'})">${esc(inv.invoice_number||'View')}</button>`:'—'}</td>
+        <td><span class="pay-badge ${isPaid?'paid':'unpaid'}">${isPaid?'✓ Paid':'Unpaid'}</span>${inv?.payment_method?`<br><span style="font-size:11px;color:var(--light);">${inv.payment_method}${inv.payment_date?' · '+fmtDate(inv.payment_date):''}</span>`:''}</td>
+        <td>${!isPaid&&inv?`<button class="btn btn-xs" style="background:var(--ok-bg);color:var(--ok-txt);border-radius:8px;" onclick="openPayModal('${r.id}','${r.total_amount||0}','${inv.id||''}')">Record Payment</button>`:'—'}</td>
+      </tr>`;}).join('')}
+      </tbody></table></div></div>`;
+}
+function openPayModal(resId,total,invId){
+  setV('pay-res-id',resId);setV('pay-amount',total||'');
+  setV('pay-date',new Date().toISOString().split('T')[0]);
+  setV('pay-method','cash');setV('pay-notes','');
+  document.getElementById('pay-err').classList.remove('show');
+  document.getElementById('payModal')._invId=invId;
+  document.getElementById('payModal').classList.add('open');
+}
+async function savePayment(){
+  const invId=document.getElementById('payModal')._invId;
+  const method=V('pay-method'),date=V('pay-date'),notes=V('pay-notes');
+  if(!invId&&!DEMO){toast('Invoice not found','error');return;}
+  if(!DEMO)await SB.from('invoices').update({status:'paid',payment_method:method,payment_date:date}).eq('id',invId);
+  else{const i=(DS.invoices||[]).findIndex(x=>x.id===invId||x.reservation_id===V('pay-res-id'));if(i>-1){DS.invoices[i].status='paid';DS.invoices[i].payment_method=method;DS.invoices[i].payment_date=date;}saveDS();}
+  closeModal('payModal');toast('✅ Payment recorded!');renderFinance();
+}
+
+// ════════════════════════════════════════════════════════════
+//  PHASE 4 — STAY PHOTOS
+// ════════════════════════════════════════════════════════════
+function openPhotosModal(resId){
+  setV('photos-res-id',resId);
+  document.getElementById('photos-grid').innerHTML='<div style="font-size:13px;color:var(--light);">Loading…</div>';
+  document.getElementById('photosModal').classList.add('open');
+  loadStayPhotos(resId);
+}
+async function loadStayPhotos(resId){
+  const grid=document.getElementById('photos-grid');
+  let photos=[];
+  if(!DEMO){const {data}=await SB.from('stay_photos').select('*').eq('reservation_id',resId).order('created_at');photos=data||[];}
+  else photos=(DS.stay_photos||[]).filter(p=>p.reservation_id===resId);
+  grid.innerHTML=photos.length?`<div class="photo-grid">${photos.map(p=>`<img src="${p.url}" class="photo-thumb" onclick="window.open('${p.url}','_blank')" title="${fmtDate(p.created_at)}">`).join('')}</div>`:'<div style="font-size:13px;color:var(--light);padding:12px 0;">No photos yet.</div>';
+}
+async function uploadStayPhotos(){
+  const resId=V('photos-res-id');const files=document.getElementById('photos-input').files;
+  if(!files.length){toast('Select photos first','error');return;}
+  const btn=document.getElementById('uploadPhotosBtn');btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
+  for(const file of files){
+    if(!DEMO&&SB){
+      const path=`stay-photos/${resId}/${Date.now()}-${file.name}`;
+      const {data:up}=await SB.storage.from('dog-photos').upload(path,file,{upsert:true});
+      if(up){const {data:u}=SB.storage.from('dog-photos').getPublicUrl(path);await SB.from('stay_photos').insert({reservation_id:resId,url:u.publicUrl,created_at:new Date().toISOString()});}
+    }else{if(!DS.stay_photos)DS.stay_photos=[];DS.stay_photos.push({id:'sp-'+Date.now(),reservation_id:resId,url:URL.createObjectURL(file),created_at:new Date().toISOString()});saveDS();}
+  }
+  btn.innerHTML='Upload';btn.disabled=false;document.getElementById('photos-input').value='';
+  toast('✅ Photos uploaded!');loadStayPhotos(resId);
+}
+
+// ════════════════════════════════════════════════════════════
+//  PHASE 4 — TEAM & ACCESS
+// ════════════════════════════════════════════════════════════
+const PERMISSIONS=['reservations','calendar','dogs','finance','settings'];
+const PERM_LABELS={reservations:'Reservations',calendar:'Calendar',dogs:'Dog Profiles',finance:'Finance',settings:'Settings'};
+
+async function renderTeamAdmin(el){
+  if(!DEMO){const {data}=await SB.from('profiles').select('*').order('role');teamMembers=data||[];}
+  else teamMembers=DS.users||[];
+  el.innerHTML=`<div class="card" style="max-width:620px;margin-bottom:14px;"><div class="card-title">➕ Add / Update Team Member</div>
+    <p style="font-size:13px;color:var(--mid);margin-bottom:14px;">Create the account in Supabase Auth first, then assign their role here.</p>
+    <div class="field"><label>User Email</label><input type="email" id="tm-email" placeholder="staff@example.com"></div>
+    <div class="field-row">
+      <div class="field"><label>Role</label><select id="tm-role" onchange="tmRoleChange()"><option value="staff">Staff</option><option value="admin">Admin</option><option value="customer">Customer</option></select></div>
+      <div class="field" id="tm-owner-field" style="display:none;"><label>Linked Owner Name</label><input type="text" id="tm-owner" placeholder="Must match dog owner name exactly"></div>
+    </div>
+    <div id="tm-perms"><div class="stag">Staff can access:</div>
+      ${PERMISSIONS.map(p=>`<div class="perm-toggle"><label class="toggle-sw"><input type="checkbox" id="perm-${p}" checked><span class="slider"></span></label><label for="perm-${p}">${PERM_LABELS[p]}</label></div>`).join('')}
+    </div>
+    <div class="alert alert-err" id="tm-err"></div>
+    <div class="alert alert-ok" id="tm-ok" style="display:none;">Saved!</div>
+    <button class="btn btn-primary" onclick="saveTeamMember()">Save Person</button>
+  </div>
+  <div class="card"><div class="card-title">👥 Current Team</div>
+    ${teamMembers.length?`<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Role</th><th>Permissions / Access</th><th>Joined</th><th></th></tr></thead><tbody>
+    ${teamMembers.map(u=>`<tr>
+      <td class="td-strong">${esc(u.first_name||'')} ${esc(u.last_name||'')}${u.linked_owner?`<br><span style="font-size:11px;color:var(--light);">Owner: ${esc(u.linked_owner)}</span>`:''}</td>
+      <td>${statusBadge(u.role)}</td>
+      <td style="font-size:12px;color:var(--mid);">${u.role==='admin'?'Full access':u.role==='customer'?'Own dogs/bookings only':(u.permissions||PERMISSIONS).join(', ')}</td>
+      <td>${fmtDate(u.created_at)}</td>
+      <td><button class="btn btn-xs btn-secondary" onclick="prefillTm(${JSON.stringify({id:u.id,role:u.role,linked_owner:u.linked_owner||'',permissions:u.permissions||PERMISSIONS}).replace(/"/g,'&quot;')})">Edit</button></td>
+    </tr>`).join('')}
+    </tbody></table></div>`:'<div class="empty-state"><div class="ei">👥</div><p>No team yet.</p></div>'}
+  </div>`;
+}
+function prefillTm(u){
+  setV('tm-email',u.email||'');setV('tm-role',u.role||'staff');setV('tm-owner',u.linked_owner||'');
+  const perms=u.permissions||PERMISSIONS;PERMISSIONS.forEach(p=>{const el=document.getElementById('perm-'+p);if(el)el.checked=perms.includes(p);});
+  tmRoleChange();
+}
+function tmRoleChange(){
+  const r=V('tm-role');
+  document.getElementById('tm-perms').style.display=r==='staff'?'block':'none';
+  document.getElementById('tm-owner-field').style.display=r==='customer'?'block':'none';
+}
+async function saveTeamMember(){
+  const email=V('tm-email'),role=V('tm-role');
+  const err=document.getElementById('tm-err');err.classList.remove('show');
+  if(!email){err.textContent='Email required.';err.classList.add('show');return;}
+  const perms=role==='staff'?PERMISSIONS.filter(p=>document.getElementById('perm-'+p)?.checked):null;
+  const linkedOwner=role==='customer'?V('tm-owner')||null:null;
+  if(!DEMO){
+    // Note: directly updating profiles requires knowing the user's UUID
+    // Show SQL for admin to run
+    const sql=`-- Run in Supabase SQL Editor:\nUPDATE profiles SET role='${role}'${linkedOwner?`, linked_owner='${linkedOwner}'`:''}${perms?`, permissions=ARRAY['${perms.join("','")}']`:''}\nWHERE id=(SELECT id FROM auth.users WHERE email='${email}');`;
+    toast('Run this SQL in Supabase to apply: '+sql.slice(0,80)+'…');
+  }else{
+    const i=(DS.users||[]).findIndex(u=>u.email===email);
+    if(i>-1){DS.users[i].role=role;if(perms)DS.users[i].permissions=perms;if(linkedOwner)DS.users[i].linked_owner=linkedOwner;}
+    else DS.users.push({id:'u-'+Date.now(),email,role,permissions:perms,linked_owner:linkedOwner,first_name:email.split('@')[0],last_name:'',created_at:new Date().toISOString()});
+    saveDS();
+  }
+  const ok=document.getElementById('tm-ok');ok.style.display='block';setTimeout(()=>ok.style.display='none',3000);
+  toast('✅ Saved!');await renderTeamAdmin(document.getElementById('adminBody')||document.getElementById('page-team'));
+}
+async function renderTeam(){
+  const el=document.getElementById('page-team');
+  el.innerHTML='<div class="page-header"><h2>Team & Access</h2><p>Manage staff roles and permissions.</p></div>';
+  await renderTeamAdmin(el);
+}
+
+// ════════════════════════════════════════════════════════════
+//  PHASE 4 — CAPACITY
+// ════════════════════════════════════════════════════════════
+async function getCapacityForDate(date){
+  const ds=date.toISOString().split('T')[0];
+  let count=0;
+  if(!DEMO){
+    const {data}=await SB.from('reservations').select('id').lte('requested_checkin',ds+'T23:59:59').gte('requested_checkout',ds+'T00:00:00').in('status',['confirmed','checked_in']);
+    count=data?.length||0;
+  }else count=(DS.reservations||[]).filter(r=>{if(!['confirmed','checked_in'].includes(r.status))return false;const ci=new Date(r.requested_checkin),co=new Date(r.requested_checkout),d=new Date(ds);return ci<=d&&co>=d;}).length;
+  const cap=pricing.capacity||10;
+  return{count,cap,pct:Math.min(100,Math.round(count/cap*100)),available:Math.max(0,cap-count)};
+}
+
+// ════════════════════════════════════════════════════════════
+//  PHASE 4 — AGENDA VIEW
+// ════════════════════════════════════════════════════════════
+async function renderAgendaView(el){
+  let res=[];
+  if(!DEMO){
+    const from=new Date();from.setDate(from.getDate()-1);const to=new Date();to.setDate(to.getDate()+30);
+    const {data}=await SB.from('reservations').select('*,dogs(name),services(name)').gte('requested_checkout',from.toISOString()).lte('requested_checkin',to.toISOString()).in('status',['confirmed','checked_in','pending']).order('requested_checkin');
+    res=data||[];
+  }else res=(DS.reservations||[]).filter(r=>['confirmed','checked_in','pending'].includes(r.status)).map(r=>({...r,dogs:{name:(DS.dogs||[]).find(d=>d.id===r.dog_id)?.name||'?'},services:{name:(DS.services||[]).find(s=>s.id===r.service_id)?.name||'?'}}));
+  const byDate={};
+  res.forEach(r=>{
+    const ci=new Date(r.requested_checkin).toISOString().split('T')[0];
+    const co=new Date(r.requested_checkout).toISOString().split('T')[0];
+    [ci,co].forEach((ds,idx)=>{if(!byDate[ds])byDate[ds]=[];byDate[ds].push({...r,_type:idx===0?'checkin':'checkout'});});
+  });
+  const sorted=Object.keys(byDate).sort().slice(0,21);
+  const today=new Date().toISOString().split('T')[0];
+  el.innerHTML=sorted.length?sorted.map(ds=>`<div class="agenda-day">
+    <div class="agenda-day-header">${fmtDate(ds)}${ds===today?' — Today':''}</div>
+    ${byDate[ds].map(r=>`<div class="agenda-event">
+      <div class="agenda-dot" style="background:${r._type==='checkin'?'var(--green)':'var(--red)'}"></div>
+      <div style="flex:1;"><span style="font-weight:600;">🐾 ${esc(r.dogs?.name||'?')}</span>
+        <span style="color:var(--mid);margin-left:8px;">${r._type==='checkin'?'📥 Check-in':'📤 Check-out'} · ${esc(r.services?.name||'?')}</span></div>
+      ${statusBadge(r.status)}</div>`).join('')}
+  </div>`).join(''):'<div class="empty-state"><div class="ei">📅</div><p>No upcoming stays.</p></div>';
+}
+
+// ════════════════════════════════════════════════════════════
+//  PHASE 4 — PATCH ADMIN DASHBOARD WITH CAPACITY + AGENDA
+// ════════════════════════════════════════════════════════════
+const _p3AdminDash=renderAdminDash;
+async function renderAdminDash(el){
+  await _p3AdminDash(el);
+  // Capacity widget
+  const cap=await getCapacityForDate(new Date());
+  const capColor=cap.pct>=90?'var(--red)':cap.pct>=70?'var(--amber)':'var(--green)';
+  el.insertAdjacentHTML('beforeend',`<div class="card" style="margin-top:14px;">
+    <div class="card-title" style="justify-content:space-between;">🏠 Today's Capacity <span style="font-size:13px;font-weight:400;color:var(--mid);">${cap.count}/${cap.cap} dogs</span></div>
+    <div class="cap-bar"><div class="cap-fill" style="width:${cap.pct}%;background:${capColor};"></div></div>
+    <div style="font-size:13px;color:var(--mid);margin-top:6px;">${cap.available} spot${cap.available!==1?'s':''} available today${cap.pct>=90?' — <strong style="color:var(--red);">Near capacity!</strong>':''}</div>
+  </div>
+  <div class="card" style="margin-top:14px;"><div class="card-title" style="justify-content:space-between;">📅 Upcoming — Next 30 Days <button class="btn btn-secondary btn-sm no-print" onclick="adminTab_='reservations';renderAdmin()" style="font-size:12px;">View All</button></div>
+    <div id="adminAgendaBody">Loading…</div>
+  </div>`);
+  await renderAgendaView(document.getElementById('adminAgendaBody'));
+}
+
+// ════════════════════════════════════════════════════════════
+//  PHASE 4 — PATCH CONFIG FOR CAPACITY
+// ════════════════════════════════════════════════════════════
+const _p3Config=renderAdminConfig;
+function renderAdminConfig(el){
+  _p3Config(el);
+  const card=el.querySelector('.card');
+  if(card){
+    const f=document.createElement('div');f.className='field';f.style.maxWidth='260px';
+    f.innerHTML=`<label>Total Capacity (spaces)</label><input type="number" id="cfg-cap" value="${pricing.capacity||10}" step="1" min="1"><div class="field-hint">Used for occupancy % and overbooking warnings.</div>`;
+    const btn=card.querySelector('button');if(btn)btn.before(f);
+  }
+}
+const _p3SaveConfig=saveConfig;
+async function saveConfig(){
+  const capEl=document.getElementById('cfg-cap');
+  if(capEl)pricing.capacity=parseInt(capEl.value)||10;
+  await _p3SaveConfig();
+  if(!DEMO&&SB){const {data:e}=await SB.from('pricing_config').select('id').limit(1).single();if(e)await SB.from('pricing_config').update({capacity:pricing.capacity}).eq('id',e.id);}
+}
+
+// ════════════════════════════════════════════════════════════
+//  PHASE 4 — PATCH RES MODAL WITH PHOTOS + PAYMENT BUTTONS
+// ════════════════════════════════════════════════════════════
+const _p3ResModal=openResModal;
+async function openResModal(id){
+  await _p3ResModal(id);
+  setTimeout(()=>{
+    const body=document.getElementById('resModalBody');if(!body)return;
+    const btns=body.querySelector('div:last-of-type');
+    if(btns){
+      const pb=document.createElement('button');pb.className='btn btn-secondary btn-sm';pb.innerHTML='📷 Stay Photos';pb.onclick=()=>openPhotosModal(id);
+      btns.appendChild(pb);
+    }
+  },150);
+}
+
+// ════════════════════════════════════════════════════════════
+//  PHASE 4 — DEMO DATA UPDATE
+// ════════════════════════════════════════════════════════════
+const _p3InitDemo=initDemoData;
+function initDemoData(){
+  _p3InitDemo();
+  if(!DS.stay_photos)DS.stay_photos=[];
+  pricing.capacity=8;
+}
 }
 </script>
 
