@@ -652,31 +652,53 @@ async function connectSupabase(btn){
 function showSetupErr(msg){const el=document.getElementById('setup-err');el.textContent=msg;if(msg)el.classList.add('show');else el.classList.remove('show');}
 function useDemoMode(){DEMO=true;localStorage.setItem('demo_mode','1');initDemoData();launchApp();}
 
-// ── CONFIGURE YOUR SUPABASE CREDENTIALS HERE ──────────────
-// Once confirmed working, paste your URL and key below and
-// the setup screen will never appear again for any visitor.
-const SUPABASE_URL = 'https://ovaovtbqprdwzznfqqfu.supabase.co';   // e.g. 'https://xxxx.supabase.co'
-const SUPABASE_KEY = 'sb_publishable__tdW73E-2bL2SYhYqlATrw_y9nEUjn-';   // your anon public key
-// ───────────────────────────────────────────────────────────
+// ── SUPABASE CREDENTIALS ─────────────────────────────────
+// Option A (recommended for production): hardcode below
+// Option B: leave blank and enter them on the setup screen
+const SUPABASE_URL = 'https://ovaovtbqprdwzznfqqfu.supabase.co';
+const SUPABASE_KEY = 'sb_publishable__tdW73E-2bL2SYhYqlATrw_y9nEUjn-';
+// ─────────────────────────────────────────────────────────
 
-window.addEventListener('load',async()=>{
-  if(localStorage.getItem('demo_mode')==='1'){DEMO=true;initDemoData();await launchApp();return;}
-
-  // Use hardcoded credentials if set, otherwise fall back to localStorage
-  const url = SUPABASE_URL || localStorage.getItem('sb_url');
-  const key = SUPABASE_KEY || localStorage.getItem('sb_key');
-
-  if(url&&key){
-    SB=supabase.createClient(url,key,{
-      auth:{persistSession:true,autoRefreshToken:true,storageKey:'shvaan-auth'}
-    });
-    // Save to localStorage so sign-out/sign-in still works
-    localStorage.setItem('sb_url',url);
-    localStorage.setItem('sb_key',key);
-    await launchApp();
+async function bootApp(){
+  if(localStorage.getItem('demo_mode')==='1'){
+    DEMO=true; initDemoData(); await launchApp(); return;
   }
-  // else: stay on setup screen — no credentials found
-});
+
+  // Priority: hardcoded → localStorage → setup screen
+  const url = (SUPABASE_URL||'').trim() || (localStorage.getItem('sb_url')||'').trim();
+  const key = (SUPABASE_KEY||'').trim() || (localStorage.getItem('sb_key')||'').trim();
+
+  if(!url || !key){
+    // No credentials anywhere — show setup screen
+    console.log('No credentials found, showing setup screen');
+    return;
+  }
+
+  try {
+    SB = supabase.createClient(url, key, {
+      auth:{ persistSession:true, autoRefreshToken:true, storageKey:'shvaan-auth' }
+    });
+    localStorage.setItem('sb_url', url);
+    localStorage.setItem('sb_key', key);
+    await launchApp();
+  } catch(e) {
+    console.error('Boot error:', e);
+    showSetupErr('Auto-connect failed: ' + e.message + '. Please enter credentials manually.');
+  }
+}
+
+// Try booting immediately when the Supabase library is ready.
+// Use both DOMContentLoaded and load to catch whichever fires first with the library available.
+function tryBoot(){
+  if(typeof supabase === 'undefined'){
+    // Library not ready yet — wait a tick and retry
+    setTimeout(tryBoot, 50);
+    return;
+  }
+  bootApp();
+}
+
+document.addEventListener('DOMContentLoaded', tryBoot);
 
 async function launchApp(){
   const setupEl = document.getElementById('setup');
@@ -820,7 +842,11 @@ async function signOut(){
   if(url)localStorage.setItem('sb_url',url);
   if(key)localStorage.setItem('sb_key',key);
 
-  // 6. Reset UI — show auth modal, clear fields
+  // 6. Reset UI — show the sign-in modal
+  const setupEl=document.getElementById('setup');
+  const appEl=document.getElementById('app');
+  if(setupEl){setupEl.style.display='';setupEl.style.visibility='';}
+  if(appEl){appEl.style.display='none';}
   document.getElementById('authOverlay').classList.add('open');
   document.getElementById('authLogin').style.display='block';
   document.getElementById('authRegister').style.display='none';
@@ -829,6 +855,8 @@ async function signOut(){
   document.getElementById('a-email').value='';
   document.getElementById('a-pass').value='';
   document.getElementById('a-err').classList.remove('show');
+  // Re-run boot so the app picks up the saved credentials and shows auth modal
+  await bootApp();
 }
 function updateNav(){
   const p=currentProfile;if(!p)return;
