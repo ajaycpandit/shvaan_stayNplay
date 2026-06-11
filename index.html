@@ -609,7 +609,14 @@ const VACC_TYPES = ['Rabies','DHPP','Bordetella'];
 // ════════════════════════════════════════════════════════════
 //  SETUP & AUTH
 // ════════════════════════════════════════════════════════════
-// connectSupabase is now handled by startApp() above
+function connectSupabase(btn){
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  if(!url){ showSetupErr('Please enter your Supabase Project URL.'); return; }
+  if(!key){ showSetupErr('Please enter your Supabase Anon Key.'); return; }
+  if(!url.startsWith('https://')){ showSetupErr('URL must start with https://'); return; }
+  startApp(url, key, btn);
+}
 function showSetupErr(msg){const el=document.getElementById('setup-err');el.textContent=msg;if(msg)el.classList.add('show');else el.classList.remove('show');}
 function useDemoMode(){DEMO=true;localStorage.setItem('demo_mode','1');initDemoData();await launchApp();}
 
