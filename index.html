@@ -604,101 +604,87 @@ const VACC_TYPES = ['Rabies','DHPP','Bordetella'];
 // ════════════════════════════════════════════════════════════
 //  SETUP & AUTH
 // ════════════════════════════════════════════════════════════
-async function connectSupabase(btn){
-  const url=document.getElementById('sb-url').value.trim();
-  const key=document.getElementById('sb-key').value.trim();
+// connectSupabase is now handled by startApp() above
+function showSetupErr(msg){const el=document.getElementById('setup-err');el.textContent=msg;if(msg)el.classList.add('show');else el.classList.remove('show');}
+function useDemoMode(){DEMO=true;localStorage.setItem('demo_mode','1');initDemoData();await launchApp();}
+
+// ════════════════════════════════════════════════════════
+//  CREDENTIALS — fill these in to skip the setup screen
+// ════════════════════════════════════════════════════════
+const SUPABASE_URL = '';  // paste your project URL here
+const SUPABASE_KEY = '';  // paste your anon key here
+// ════════════════════════════════════════════════════════
+
+// Single entry point — called on page load AND by the Connect button
+async function startApp(urlOverride, keyOverride, btn){
   showSetupErr('');
 
-  if(!url){showSetupErr('Please enter your Supabase Project URL.');return;}
-  if(!key){showSetupErr('Please enter your Supabase Anon Key.');return;}
-  if(!url.startsWith('https://')){showSetupErr('URL must start with https://');return;}
-
-  // Show loading state on button
-  if(btn){btn.textContent='Connecting…';btn.disabled=true;}
-
-  try{
-    // Create client
-    SB = supabase.createClient(url, key, {
-      auth:{ persistSession:true, autoRefreshToken:true, storageKey:'shvaan-auth' }
-    });
-
-    // Use auth.getSession() as the connection test — works regardless of RLS
-    const {data, error} = await SB.auth.getSession();
-    if(error) throw error;
-
-    // Connection confirmed — save credentials
-    localStorage.setItem('sb_url', url);
-    localStorage.setItem('sb_key', key);
-    if(btn){btn.textContent='Connect & Launch';btn.disabled=false;}
-
-    // Boot the app
-    await launchApp();
-
-  }catch(e){
-    if(btn){btn.textContent='Connect & Launch';btn.disabled=false;}
-    const msg = e.message||'';
-    console.error('connectSupabase error:', msg);
-    if(msg.includes('Failed to fetch')||msg.includes('NetworkError')||msg.includes('ERR_NAME')){
-      showSetupErr('Cannot reach Supabase — check your Project URL and internet connection.');
-    } else if(msg.toLowerCase().includes('invalid')||msg.includes('apikey')||msg.includes('401')){
-      showSetupErr('Invalid Anon Key — copy it from Supabase → Settings → API.');
-    } else if(msg){
-      showSetupErr('Error: '+msg);
-    } else {
-      showSetupErr('Connection failed — check your URL and Anon Key and try again.');
-    }
-  }
-}
-function showSetupErr(msg){const el=document.getElementById('setup-err');el.textContent=msg;if(msg)el.classList.add('show');else el.classList.remove('show');}
-function useDemoMode(){DEMO=true;localStorage.setItem('demo_mode','1');initDemoData();launchApp();}
-
-// ── SUPABASE CREDENTIALS ─────────────────────────────────
-// Option A (recommended for production): hardcode below
-// Option B: leave blank and enter them on the setup screen
-const SUPABASE_URL = 'https://ovaovtbqprdwzznfqqfu.supabase.co';
-const SUPABASE_KEY = 'sb_publishable__tdW73E-2bL2SYhYqlATrw_y9nEUjn-';
-// ─────────────────────────────────────────────────────────
-
-async function bootApp(){
-  if(localStorage.getItem('demo_mode')==='1'){
-    DEMO=true; initDemoData(); await launchApp(); return;
-  }
-
-  // Priority: hardcoded → localStorage → setup screen
-  const url = (SUPABASE_URL||'').trim() || (localStorage.getItem('sb_url')||'').trim();
-  const key = (SUPABASE_KEY||'').trim() || (localStorage.getItem('sb_key')||'').trim();
+  const url = (urlOverride||SUPABASE_URL||localStorage.getItem('sb_url')||'').trim();
+  const key = (keyOverride||SUPABASE_KEY||localStorage.getItem('sb_key')||'').trim();
 
   if(!url || !key){
-    // No credentials anywhere — show setup screen
-    console.log('No credentials found, showing setup screen');
+    // Nothing to connect with — stay on setup screen
     return;
+  }
+
+  if(btn){ btn.textContent='Connecting…'; btn.disabled=true; }
+
+  // Wait for Supabase library (CDN may still be loading)
+  let waited = 0;
+  while(typeof supabase === 'undefined' || typeof supabase.createClient !== 'function'){
+    if(waited > 5000){
+      showSetupErr('Supabase library failed to load. Check your internet connection and reload.');
+      if(btn){ btn.textContent='Connect & Launch'; btn.disabled=false; }
+      return;
+    }
+    await new Promise(r => setTimeout(r, 100));
+    waited += 100;
   }
 
   try {
     SB = supabase.createClient(url, key, {
       auth:{ persistSession:true, autoRefreshToken:true, storageKey:'shvaan-auth' }
     });
+
+    // Quick auth ping to confirm credentials are valid
+    const { error } = await SB.auth.getSession();
+    if(error) throw error;
+
+    // Save for next visit
     localStorage.setItem('sb_url', url);
     localStorage.setItem('sb_key', key);
+
+    if(btn){ btn.textContent='Connect & Launch'; btn.disabled=false; }
     await launchApp();
-  } catch(e) {
-    console.error('Boot error:', e);
-    showSetupErr('Auto-connect failed: ' + e.message + '. Please enter credentials manually.');
+
+  } catch(e){
+    if(btn){ btn.textContent='Connect & Launch'; btn.disabled=false; }
+    console.error('startApp error:', e);
+    const m = e.message||'';
+    if(m.includes('fetch')||m.includes('Network')){
+      showSetupErr('Cannot reach Supabase — check your Project URL.');
+    } else if(m.includes('Invalid')||m.includes('apikey')||m.includes('401')){
+      showSetupErr('Invalid Anon Key — copy it from Supabase → Settings → API.');
+    } else if(m){
+      showSetupErr('Error: ' + m);
+    } else {
+      showSetupErr('Connection failed. Double-check your URL and Anon Key.');
+    }
   }
 }
 
-// Try booting immediately when the Supabase library is ready.
-// Use both DOMContentLoaded and load to catch whichever fires first with the library available.
-function tryBoot(){
-  if(typeof supabase === 'undefined'){
-    // Library not ready yet — wait a tick and retry
-    setTimeout(tryBoot, 50);
-    return;
-  }
-  bootApp();
+// Called by the Connect button
+function connectSupabase(btn){
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  if(!url){ showSetupErr('Please enter your Supabase Project URL.'); return; }
+  if(!key){ showSetupErr('Please enter your Supabase Anon Key.'); return; }
+  if(!url.startsWith('https://')){ showSetupErr('URL must start with https://'); return; }
+  startApp(url, key, btn);
 }
 
-document.addEventListener('DOMContentLoaded', tryBoot);
+// Auto-boot on page load
+document.addEventListener('DOMContentLoaded', () => startApp());
 
 async function launchApp(){
   const setupEl = document.getElementById('setup');
@@ -856,7 +842,7 @@ async function signOut(){
   document.getElementById('a-pass').value='';
   document.getElementById('a-err').classList.remove('show');
   // Re-run boot so the app picks up the saved credentials and shows auth modal
-  await bootApp();
+  await startApp();
 }
 function updateNav(){
   const p=currentProfile;if(!p)return;
