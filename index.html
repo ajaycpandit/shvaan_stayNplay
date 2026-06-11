@@ -555,7 +555,8 @@ tr:hover td{background:var(--cream);}
     </div>
     <div class="field">
       <label>Supabase Project URL</label>
-      <input type="url" id="inp-url" placeholder="https://xxxxxxxxxxxx.supabase.co">
+      <input type="url" id="inp-url" placeholder="https://xxxxxxxxxxxx.supabase.co"
+        value="https://ovaovtbqprdwzznfqqfu.supabase.co">
     </div>
     <div class="field">
       <label>Supabase Anon Public Key</label>
@@ -860,6 +861,12 @@ tr:hover td{background:var(--cream);}
      JAVASCRIPT — loaded AFTER all HTML is defined
 ════════════════════════════════════════════════════════════ -->
 <script>
+// ─── SUPABASE CREDENTIALS ────────────────────────────────────
+// Fill these in once — setup screen will never appear again
+const SUPABASE_URL = 'https://ovaovtbqprdwzznfqqfu.supabase.co';
+const SUPABASE_KEY = 'sb_publishable__tdW73E-2bL2SYhYqlATrw_y9nEUjn-';  // ← paste your current anon key here
+// ─────────────────────────────────────────────────────────────
+
 // ─── GLOBALS ───
 let SB = null, DEMO = false;
 let currentUser = null, profile = null;
@@ -965,8 +972,9 @@ function autoBoot(){
     dbg('Demo mode detected');runDemoMode();return;
   }
 
-  const url=localStorage.getItem('sb_url');
-  const key=localStorage.getItem('sb_key');
+  // Use hardcoded constants first, fall back to localStorage
+  const url=(SUPABASE_URL||'').trim() || localStorage.getItem('sb_url');
+  const key=(SUPABASE_KEY||'').trim() || localStorage.getItem('sb_key');
 
   if(url&&key){
     dbg('Credentials found — silently auto-connecting in background');
@@ -1067,15 +1075,13 @@ async function doSignOut(){
   document.getElementById('appScreen').style.display='none';
   document.getElementById('dbgLog').innerHTML='';
   document.getElementById('dbgLog').style.display='none';
-  // Show landing page after sign out so public visitors see it
-  const url=localStorage.getItem('sb_url');
-  const key=localStorage.getItem('sb_key');
-  if(url&&key){
-    // Credentials still saved — show auth modal directly
-    document.getElementById('setupScreen').style.display='flex';
-  } else {
-    showLanding();
-  }
+  // Re-save hardcoded credentials so auto-connect works on next page load
+  const credUrl=(SUPABASE_URL||'').trim();
+  const credKey=(SUPABASE_KEY||'').trim();
+  if(credUrl) localStorage.setItem('sb_url',credUrl);
+  if(credKey) localStorage.setItem('sb_key',credKey);
+  // Always show landing after sign out
+  showLanding();
   toast('Signed out.');
 }
 
