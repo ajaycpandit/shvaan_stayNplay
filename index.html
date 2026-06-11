@@ -341,6 +341,11 @@ tr:hover td{background:var(--cream);}
     <div style="margin-top:10px;text-align:center;">
       <a href="#" style="font-size:12px;color:var(--light);" onclick="useDemoMode()">Try demo mode (no Supabase needed)</a>
     </div>
+    <!-- DEBUG PANEL -->
+    <div id="dbgPanel" style="margin-top:16px;background:#0d1117;border-radius:10px;padding:14px;font-family:monospace;font-size:12px;color:#58a6ff;text-align:left;display:none;max-height:220px;overflow-y:auto;">
+      <div style="color:#8b949e;margin-bottom:8px;">── Debug Log ──</div>
+      <div id="dbgLog"></div>
+    </div>
   </div>
 </div>
 
@@ -616,59 +621,89 @@ const SUPABASE_KEY = '';  // paste your anon key here
 // ════════════════════════════════════════════════════════
 
 // Single entry point — called on page load AND by the Connect button
+// ── DEBUG HELPERS ──
+function dbg(msg, color){
+  const panel = document.getElementById('dbgPanel');
+  const log   = document.getElementById('dbgLog');
+  if(!panel||!log) return;
+  panel.style.display = 'block';
+  const line = document.createElement('div');
+  line.style.color = color||'#58a6ff';
+  line.style.marginBottom = '3px';
+  line.textContent = new Date().toLocaleTimeString('en-US',{hour12:false}) + ' ' + msg;
+  log.appendChild(line);
+  panel.scrollTop = panel.scrollHeight;
+  console.log('[Shvaan]', msg);
+}
+function dbgOK(msg){ dbg('✅ ' + msg, '#3fb950'); }
+function dbgErr(msg){ dbg('❌ ' + msg, '#f85149'); }
+function dbgWarn(msg){ dbg('⚠️ ' + msg, '#e3b341'); }
+
 async function startApp(urlOverride, keyOverride, btn){
   showSetupErr('');
+  dbg('startApp() called');
 
   const url = (urlOverride||SUPABASE_URL||localStorage.getItem('sb_url')||'').trim();
   const key = (keyOverride||SUPABASE_KEY||localStorage.getItem('sb_key')||'').trim();
 
+  dbg('URL: ' + (url ? url.slice(0,40)+'…' : 'EMPTY'));
+  dbg('Key: ' + (key ? key.slice(0,20)+'…' : 'EMPTY'));
+
   if(!url || !key){
-    // Nothing to connect with — stay on setup screen
+    dbgWarn('No credentials — staying on setup screen');
     return;
   }
 
   if(btn){ btn.textContent='Connecting…'; btn.disabled=true; }
 
-  // Wait for Supabase library (CDN may still be loading)
+  // Wait for Supabase library
+  dbg('Checking Supabase library…');
   let waited = 0;
   while(typeof supabase === 'undefined' || typeof supabase.createClient !== 'function'){
-    if(waited > 5000){
-      showSetupErr('Supabase library failed to load. Check your internet connection and reload.');
+    if(waited > 8000){
+      dbgErr('Supabase library timed out after 8s');
+      showSetupErr('Supabase library failed to load. Check internet connection and reload.');
       if(btn){ btn.textContent='Connect & Launch'; btn.disabled=false; }
       return;
     }
     await new Promise(r => setTimeout(r, 100));
     waited += 100;
   }
+  dbgOK('Supabase library ready (waited ' + waited + 'ms)');
 
   try {
+    dbg('Creating Supabase client…');
     SB = supabase.createClient(url, key, {
       auth:{ persistSession:true, autoRefreshToken:true, storageKey:'shvaan-auth' }
     });
+    dbgOK('Client created');
 
-    // Quick auth ping to confirm credentials are valid
-    const { error } = await SB.auth.getSession();
-    if(error) throw error;
+    dbg('Testing connection with getSession()…');
+    const { data, error } = await SB.auth.getSession();
+    if(error){ dbgErr('getSession error: ' + error.message); throw error; }
+    dbgOK('Connection confirmed — session: ' + (data?.session ? 'active' : 'none (not logged in yet)'));
 
-    // Save for next visit
     localStorage.setItem('sb_url', url);
     localStorage.setItem('sb_key', key);
+    dbgOK('Credentials saved to localStorage');
 
     if(btn){ btn.textContent='Connect & Launch'; btn.disabled=false; }
+    dbg('Calling launchApp()…');
     await launchApp();
 
   } catch(e){
     if(btn){ btn.textContent='Connect & Launch'; btn.disabled=false; }
+    dbgErr('CAUGHT: ' + (e.message||JSON.stringify(e)));
     console.error('startApp error:', e);
     const m = e.message||'';
     if(m.includes('fetch')||m.includes('Network')){
       showSetupErr('Cannot reach Supabase — check your Project URL.');
     } else if(m.includes('Invalid')||m.includes('apikey')||m.includes('401')){
-      showSetupErr('Invalid Anon Key — copy it from Supabase → Settings → API.');
+      showSetupErr('Invalid Anon Key — copy from Supabase → Settings → API.');
     } else if(m){
       showSetupErr('Error: ' + m);
     } else {
-      showSetupErr('Connection failed. Double-check your URL and Anon Key.');
+      showSetupErr('Connection failed — check URL and Anon Key.');
     }
   }
 }
@@ -687,10 +722,12 @@ function connectSupabase(btn){
 // No event listeners needed — the script is at the bottom of <body>
 
 async function launchApp(){
+  dbg('launchApp() called');
   const setupEl = document.getElementById('setup');
   const appEl   = document.getElementById('app');
   if(setupEl){ setupEl.style.display='none'; setupEl.style.visibility='hidden'; }
   if(appEl)  { appEl.style.display='block'; }
+  dbgOK('Setup hidden, app shown');
   if(DEMO){
     currentUser={id:'admin-demo',email:'admin@demo.com'};
     currentProfile={id:'admin-demo',role:'admin',first_name:'Ajay',last_name:'Admin',phone:''};
@@ -2487,9 +2524,22 @@ async function renderMyReservations(){
 
 // Boot guard — prevents startApp running twice if CDN was cached
 let _appStarted = false;
-const _startOnce = () => { if(!_appStarted){ _appStarted=true; startApp(); } };
+const _startOnce = () => {
+  if(!_appStarted){
+    _appStarted=true;
+    console.log('[Shvaan] _startOnce: starting app');
+    startApp();
+  } else {
+    console.log('[Shvaan] _startOnce: already started, skipping');
+  }
+};
 // If Supabase already loaded (cached), run now
-if(typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') _startOnce();
+if(typeof supabase !== 'undefined' && typeof supabase.createClient === 'function'){
+  console.log('[Shvaan] Supabase already available, calling _startOnce immediately');
+  _startOnce();
+} else {
+  console.log('[Shvaan] Supabase not yet loaded, waiting for onload');
+}
 </script>
 
 <!-- Load Supabase AFTER all app code is defined -->
