@@ -324,13 +324,15 @@ tr:hover td{background:var(--cream);}
       <div class="setup-logo-icon">🐾</div>
       <div><strong>Shvaan Stay & Play</strong></div>
     </div>
+    <div style="display:inline-block;background:var(--forest);color:#fff;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:100px;margin-bottom:12px;">✦ Phase 3</div>
     <h2>Connect to Supabase</h2>
     <p>Enter your Supabase project credentials from <strong>Settings → API</strong>.</p>
     <div class="setup-steps">
-      <strong>Phase 2 setup:</strong><br>
-      1. Run <code>shvaan-phase1.sql</code> (if not done)<br>
-      2. Run <code>shvaan-phase2.sql</code> in SQL Editor<br>
-      3. Paste your credentials below
+      <strong>Phase 3 setup — run these SQL files in order:</strong><br>
+      1. <code>shvaan-phase1.sql</code> — tables &amp; RLS<br>
+      2. <code>shvaan-fix-recursion.sql</code> — profiles fix<br>
+      3. <code>shvaan-phase2.sql</code> — indexes<br>
+      4. <code>shvaan-phase3.sql</code> — invoices &amp; business info
     </div>
     <div class="field"><label>Supabase Project URL</label><input type="url" id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co"></div>
     <div class="field"><label>Supabase Anon Public Key</label><input type="text" id="sb-key" placeholder="eyJhbGciOi..."></div>
