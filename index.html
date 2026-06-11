@@ -22,7 +22,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--cream);color:va
 h1,h2,h3,h4{font-family:'Playfair Display',serif;}
 
 /* SETUP */
-#setupScreen{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;padding:24px;z-index:9999;}
+#setupScreen{position:fixed;inset:0;background:var(--cream);display:none;align-items:center;justify-content:center;padding:24px;z-index:9999;}
 .setup-card{background:var(--warm);border-radius:20px;padding:40px;width:min(480px,100%);border:1px solid var(--border);}
 .setup-logo{display:flex;align-items:center;gap:10px;margin-bottom:24px;}
 .setup-logo-icon{width:42px;height:42px;background:var(--forest);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;}
@@ -339,7 +339,7 @@ tr:hover td{background:var(--cream);}
 .custom-rate-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:var(--amber-l);color:var(--clay);}
 
 /* ── LANDING PAGE ── */
-#landingScreen{display:none;}
+#landingScreen{display:block;}
 .lp-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 5vw;height:68px;background:rgba(254,252,248,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
 .lp-logo{display:flex;align-items:center;gap:10px;cursor:pointer;}
 .lp-logo-icon{width:38px;height:38px;background:var(--forest);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;}
@@ -940,10 +940,12 @@ function showLanding(){
   document.getElementById('landingScreen').style.display='block';
   document.getElementById('setupScreen').style.display='none';
   document.getElementById('appScreen').style.display='none';
+  document.getElementById('appScreen').style.visibility='visible';
 }
 function showSetupFromLanding(){
   document.getElementById('landingScreen').style.display='none';
   document.getElementById('setupScreen').style.display='flex';
+  document.getElementById('setupScreen').style.visibility='visible';
 }
 function lpScroll(id){
   document.getElementById(id)?.scrollIntoView({behavior:'smooth'});
@@ -958,18 +960,30 @@ function lpFaq(btn){
 // ─── AUTO BOOT (runs after Supabase CDN loads below) ───
 function autoBoot(){
   dbg('autoBoot called');
+
   if(localStorage.getItem('demo_mode')==='1'){
     dbg('Demo mode detected');runDemoMode();return;
   }
+
   const url=localStorage.getItem('sb_url');
   const key=localStorage.getItem('sb_key');
+
   if(url&&key){
-    dbg('Saved credentials found — auto-connecting');
+    dbg('Credentials found — silently auto-connecting in background');
     SB=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'shvaan-auth-v3'}});
-    connect(url,key,null);
+    // Connect silently — if session is active, go straight to app
+    // Otherwise stay on landing (user clicks login)
+    SB.auth.getSession().then(({data,error})=>{
+      if(data?.session?.user){
+        dbg('Active session found — launching app');
+        connect(url,key,null);
+      } else {
+        dbg('No active session — showing landing');
+        showLanding();
+      }
+    }).catch(()=>showLanding());
   } else {
-    // No saved credentials — show landing page to public visitors
-    dbg('No saved credentials — showing landing page');
+    dbg('No credentials — showing landing');
     showLanding();
   }
 }
@@ -1120,14 +1134,29 @@ function go(page,params={}){
   navParams=params;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const el=document.getElementById('page-'+page);
-  if(el)el.classList.add('active');
+  if(el){
+    el.classList.add('active');
+  } else {
+    console.error('[go] No page element found for: page-'+page);
+    return;
+  }
   const pages={
     dashboard:renderDashboard,dogs:renderDogs,'dog-detail':()=>renderDogDetail(params.id),
     book:renderBook,'my-res':renderMyRes,invoices:renderInvoices,
     'invoice-view':()=>renderInvoiceView(params.id,params.back),
     admin:renderAdmin,finance:renderFinance,team:renderTeam,profile:renderProfile
   };
-  if(pages[page])pages[page]();
+  if(!pages[page]){console.error('[go] No renderer for page: '+page);return;}
+  try{
+    const result=pages[page]();
+    if(result&&result.catch)result.catch(e=>{
+      console.error('[go] Render error on '+page+':',e);
+      el.innerHTML='<div class="page-header"><h2>Error</h2></div><div class="card"><div class="alert alert-err show">⚠️ '+e.message+'<br><br><small>'+e.stack+'</small></div></div>';
+    });
+  }catch(e){
+    console.error('[go] Sync error on '+page+':',e);
+    el.innerHTML='<div class="page-header"><h2>Error</h2></div><div class="card"><div class="alert alert-err show">⚠️ '+e.message+'</div></div>';
+  }
 }
 
 // ─── UTILITIES ───
