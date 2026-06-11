@@ -51,6 +51,26 @@ nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-co
 .nav-pill .av{width:28px;height:28px;border-radius:50%;background:var(--forest);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:600;}
 .nav-pill .nm{font-size:13px;font-weight:600;color:var(--forest);}
 .nav-pill .rb{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--amber);background:var(--amber-l);padding:2px 7px;border-radius:100px;}
+/* hamburger */
+#navHamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;flex-direction:column;gap:5px;}
+#navHamburger span{display:block;width:22px;height:2px;background:var(--dark);border-radius:2px;transition:all .25s;}
+/* mobile drawer */
+#mobileDrawer{display:none;position:fixed;inset:0;z-index:300;background:rgba(10,20,15,.5);}
+#mobileDrawer.open{display:block;}
+#mobileDrawerInner{position:absolute;top:0;right:0;bottom:0;width:min(280px,80vw);background:var(--warm);padding:24px;display:flex;flex-direction:column;gap:4px;overflow-y:auto;}
+.drawer-link{padding:12px 14px;font-size:15px;font-weight:500;color:var(--dark);cursor:pointer;border-radius:10px;display:flex;align-items:center;gap:10px;}
+.drawer-link:hover{background:var(--forest-p);color:var(--forest);}
+.drawer-divider{height:1px;background:var(--border);margin:8px 0;}
+/* bottom nav bar on mobile */
+#bottomNav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--warm);border-top:1px solid var(--border);z-index:199;padding:8px 0 env(safe-area-inset-bottom,8px);}
+#bottomNav .bnav-inner{display:flex;justify-content:space-around;}
+.bnav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;cursor:pointer;color:var(--light);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;border-radius:10px;}
+.bnav-item:hover,.bnav-item.active{color:var(--forest);}
+.bnav-item .bnav-icon{font-size:20px;}
+@media(max-width:700px){
+  #bottomNav{display:block;}
+  #appScreen{padding-bottom:70px;}
+}
 
 /* PAGES */
 .page{display:none;padding:28px 4vw 64px;}
@@ -224,8 +244,61 @@ tr:hover td{background:var(--cream);}
 .file-upload-area{border:1.5px dashed var(--border);border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:var(--cream);}
 .file-upload-area:hover{border-color:var(--forest);background:var(--forest-p);}
 .file-chosen{display:flex;align-items:center;gap:8px;padding:7px 11px;background:var(--forest-p);border-radius:8px;margin-top:6px;font-size:13px;color:var(--forest);}
-@media(max-width:700px){.field-row{grid-template-columns:1fr;}.vacc-row{grid-template-columns:1fr;}.dogs-grid{grid-template-columns:1fr;}.stat-grid{grid-template-columns:1fr 1fr;}}
-@media print{nav,#setupScreen,.btn,.overlay,.no-print{display:none!important;}.page{display:block!important;padding:0!important;}.invoice-wrap{border:none;max-width:100%;}}
+/* ── MOBILE ── */
+@media(max-width:700px){
+  /* forms */
+  .field-row,.field-row-3{grid-template-columns:1fr;}
+  /* dogs */
+  .vacc-row{grid-template-columns:1fr;}
+  .dogs-grid{grid-template-columns:1fr 1fr;}
+  /* dashboard */
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  /* booking two-col layout → single col */
+  .bk-layout{grid-template-columns:1fr!important;}
+  /* admin */
+  .admin-tabs{overflow-x:auto;white-space:nowrap;padding-bottom:2px;}
+  .admin-tab{flex-shrink:0;}
+  /* modals fill screen */
+  .modal{padding:20px;border-radius:16px 16px 0 0;margin:auto 0 0 0;width:100%!important;max-width:100%!important;}
+  .overlay{padding:0;align-items:flex-end;}
+  /* invoice */
+  .invoice-header{flex-direction:column;gap:14px;}
+  .invoice-header>div:last-child{text-align:left;}
+  .invoice-body{padding:20px;}
+  .invoice-footer{padding:16px 20px;}
+  .invoice-totals{width:100%;margin-left:0;margin-top:16px;}
+  /* nav — hide text links, show hamburger */
+  .nav-right .nav-link{display:none;}
+  #navAdmin{display:none;}
+  #navHamburger{display:flex!important;}
+  /* pages */
+  .page{padding:16px 4vw 80px;}
+  /* tables */
+  table{font-size:12px;}
+  th,td{padding:8px 8px;}
+  /* quote panel stays below form on mobile */
+  .quote-sticky{position:static!important;}
+  /* hide less important table columns on mobile */
+  .hide-mobile{display:none!important;}
+  /* bigger tap targets */
+  .btn-xs{padding:6px 12px;font-size:12px;}
+  .cal-day{font-size:12px;}
+  /* full-width buttons in modals */
+  .modal .btn{width:100%;justify-content:center;border-radius:12px;margin-bottom:6px;}
+  .modal div[style*="display:flex"][style*="gap"]{flex-direction:column;}
+  /* setup card */
+  .setup-card{padding:24px;}
+}
+@media(max-width:400px){
+  .dogs-grid{grid-template-columns:1fr;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .nav-pill .nm,.nav-pill .rb{display:none;}
+}
+@media print{
+  nav,#setupScreen,.btn,.overlay,.no-print{display:none!important;}
+  .page{display:block!important;padding:0!important;}
+  .invoice-wrap{border:none;max-width:100%;}
+}
 </style>
 </head>
 <body>
@@ -282,9 +355,49 @@ tr:hover td{background:var(--cream);}
         <span class="nm" id="navName">User</span>
         <span class="rb" id="navRole">Member</span>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="doSignOut()">Sign out</button>
+      <button class="btn btn-secondary btn-sm" onclick="doSignOut()" style="white-space:nowrap;">Sign out</button>
+      <button id="navHamburger" onclick="openDrawer()" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </nav>
+
+  <!-- MOBILE DRAWER -->
+  <div id="mobileDrawer" onclick="closeDrawer()">
+    <div id="mobileDrawerInner" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:32px;height:32px;background:var(--forest);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;">🐾</div>
+          <strong style="font-family:'Playfair Display',serif;font-size:16px;color:var(--forest);">Shvaan</strong>
+        </div>
+        <button onclick="closeDrawer()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--light);">✕</button>
+      </div>
+      <div id="drawerUserInfo" style="padding:12px 14px;background:var(--forest-p);border-radius:12px;margin-bottom:12px;">
+        <div id="drawerName" style="font-weight:600;font-size:14px;"></div>
+        <div id="drawerRole" style="font-size:12px;color:var(--mid);margin-top:2px;"></div>
+      </div>
+      <div class="drawer-link" onclick="go('dashboard');closeDrawer()">🏠 Dashboard</div>
+      <div class="drawer-link" onclick="go('dogs');closeDrawer()">🐾 My Dogs</div>
+      <div class="drawer-link" onclick="go('book');closeDrawer()">📅 Book a Stay</div>
+      <div class="drawer-link" onclick="go('my-res');closeDrawer()">📋 My Reservations</div>
+      <div class="drawer-link" onclick="go('invoices');closeDrawer()">🧾 Invoices</div>
+      <div id="drawerAdmin"></div>
+      <div class="drawer-divider"></div>
+      <div class="drawer-link" onclick="go('profile');closeDrawer()">👤 My Profile</div>
+      <div class="drawer-link" onclick="doSignOut()" style="color:var(--red);">↩ Sign Out</div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV (mobile) -->
+  <div id="bottomNav">
+    <div class="bnav-inner">
+      <div class="bnav-item" onclick="go('dashboard')"><span class="bnav-icon">🏠</span>Home</div>
+      <div class="bnav-item" onclick="go('dogs')"><span class="bnav-icon">🐾</span>Dogs</div>
+      <div class="bnav-item" onclick="go('book')"><span class="bnav-icon">📅</span>Book</div>
+      <div class="bnav-item" onclick="go('my-res')"><span class="bnav-icon">📋</span>Reservations</div>
+      <div class="bnav-item" onclick="openDrawer()"><span class="bnav-icon">☰</span>More</div>
+    </div>
+  </div>
 
   <div class="page" id="page-dashboard"></div>
   <div class="page" id="page-dogs"></div>
@@ -978,7 +1091,7 @@ async function renderBook(){
   const today=new Date();today.setHours(0,0,0,0);
   const validDogs=dogs.filter(d=>VACCS.every(t=>{const v=(d.vaccinations||[]).find(x=>x.vaccine_type===t);return v&&new Date(v.expires_on)>=today;}));
   el.innerHTML=`<div class="page-header"><h2>Book a Stay</h2></div>
-  <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;">
+  <div class="bk-layout" style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;">
     <div>
       <div class="card"><div class="card-title">1. Select Dog</div>
         <div class="dogs-grid">${dogs.map(d=>{const ok=validDogs.includes(d);return`<div class="dog-card ${bk.dogId===d.id?'selected':''}" id="bdog-${d.id}" onclick="${ok?`pickBkDog('${d.id}')`:`toast('${esc(d.name)} has expired vaccines','error')`}" style="${ok?'':'opacity:.5;cursor:not-allowed;'}">
@@ -1554,6 +1667,44 @@ function enrichDemoRes(r){
   const svc=(DS.services||[]).find(s=>s.id===r.service_id)||{};
   const disc=(DS.discounts||[]).filter(d=>d.reservation_id===r.id);
   return{...r,dogs:{name:dog.name,size:dog.size,breeds:{name:dog.breed_name},breed_other:dog.breed_other},profiles:{first_name:usr.first_name,last_name:usr.last_name,phone:usr.phone||''},services:{name:svc.name,unit:svc.unit},discounts:disc};
+}
+</script>
+
+<script>
+// ─── MOBILE DRAWER ───
+function openDrawer(){
+  const d=document.getElementById('mobileDrawer');
+  if(d){
+    d.classList.add('open');
+    // Update drawer user info
+    const p=profile;
+    if(p){
+      const dn=document.getElementById('drawerName');
+      const dr=document.getElementById('drawerRole');
+      const da=document.getElementById('drawerAdmin');
+      if(dn)dn.textContent=(p.first_name||'')+' '+(p.last_name||'');
+      if(dr)dr.textContent=p.role==='admin'?'Administrator':'Member';
+      if(da)da.innerHTML=p.role==='admin'?'<div class="drawer-link" onclick="go('admin');closeDrawer()">⚙️ Admin Panel</div>':'';
+    }
+  }
+}
+function closeDrawer(){
+  document.getElementById('mobileDrawer')?.classList.remove('open');
+}
+// Close drawer on back button
+window.addEventListener('popstate',closeDrawer);
+// Update bottom nav active state
+const _origGo=go;
+function go(page,params={}){
+  _origGo(page,params);
+  // highlight active bottom nav item
+  const map={dashboard:0,dogs:1,book:2,'my-res':3};
+  document.querySelectorAll('.bnav-item').forEach((el,i)=>{
+    el.classList.toggle('active',i===map[page]);
+  });
+  // update drawer admin link visibility
+  const da=document.getElementById('drawerAdmin');
+  if(da&&profile)da.innerHTML=profile.role==='admin'?'<div class="drawer-link" onclick="go('admin');closeDrawer()">⚙️ Admin Panel</div>':'';
 }
 </script>
 
